@@ -85,6 +85,18 @@ tr.current td{background:var(--gold-soft)}
 .read-more{background:transparent;border:1px solid var(--accent);color:var(--accent);padding:7px 16px;border-radius:20px;cursor:pointer;font-size:13px;font-weight:600}
 .read-more:hover{background:var(--accent);color:#fff}
 
+/* Блок «Простыми словами» */
+.human{display:flex;gap:10px;margin:10px 0 4px;padding:12px 14px;background:linear-gradient(135deg,var(--blue),var(--lav));border:1px solid #d9d3ec;border-radius:12px;font-size:14px}
+.human-icon{font-size:18px;line-height:1.3}
+.human-text{flex:1}
+.human-label{display:block;font-weight:700;color:var(--accent2);font-size:12px;letter-spacing:.4px;text-transform:uppercase;margin-bottom:3px}
+
+/* Словарь терминов */
+.gloss{display:grid;grid-template-columns:180px 1fr;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13.5px}
+.gloss:last-child{border-bottom:none}
+.gloss-term{font-weight:600;color:var(--accent2)}
+.gloss-meaning{color:var(--text)}
+
 /* Совместимость */
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 #compat-result .score{font-size:34px;color:var(--accent);font-weight:700}
@@ -125,4 +137,6 @@ tr.current td{background:var(--gold-soft)}
   .two-col{grid-template-columns:1fr}
   .top{justify-content:center}
   .hero img{height:150px}
+  .gloss{grid-template-columns:1fr}
+  .gloss-term{margin-bottom:2px}
 }

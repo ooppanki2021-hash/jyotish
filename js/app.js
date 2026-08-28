@@ -109,9 +109,10 @@
     var html = sections.map(function(s){
       var id = readingCounter++;
       var briefHtml = '<div class="brief">' + s.brief + '</div>';
+      var humanHtml = s.human ? '<div class="human"><span class="human-icon">💡</span><div class="human-text"><span class="human-label">Простыми словами</span> ' + s.human + '</div></div>' : '';
       var detailHtml = '<div class="detail" id="rd-detail-'+id+'" style="display:none">' + s.items.join('') + '</div>';
       var btn = '<button type="button" class="read-more" data-target="'+id+'">читать подробно ▾</button>';
-      return '<div class="card reading-section"><div class="sec-head"><h3>'+esc(s.title)+'</h3>'+btn+'</div>'+briefHtml+detailHtml+'</div>';
+      return '<div class="card reading-section"><div class="sec-head"><h3>'+esc(s.title)+'</h3>'+btn+'</div>'+briefHtml+humanHtml+detailHtml+'</div>';
     }).join('');
     $('reading').innerHTML = html;
     // делегирование кликов по кнопкам «читать подробно»
@@ -138,6 +139,18 @@
       allBtn.textContent = anyHidden ? 'Свернуть всё' : 'Развернуть всё';
     });
     $('reading').insertBefore(allBtn, $('reading').firstChild);
+    // словарь терминов
+    renderGlossary();
+  }
+
+  function renderGlossary(){
+    var terms = Reading.GLOSSARY || [];
+    if (!terms.length) return;
+    var rows = terms.map(function(t){
+      return '<div class="gloss"><span class="gloss-term">' + esc(t[0]) + '</span><span class="gloss-meaning">' + esc(t[1]) + '</span></div>';
+    }).join('');
+    var html = '<div class="card" id="glossary-card"><h2>Словарь терминов</h2><p class="muted" style="margin-top:0">Коротко о том, что значат астрологические слова в вашем разборе:</p>' + rows + '</div>';
+    $('reading').insertAdjacentHTML('beforeend', html);
   }
 
   function renderVargas(chart){

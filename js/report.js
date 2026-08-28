@@ -36,6 +36,7 @@
     '.meta{color:#666;font-size:13px}',
     '.tag{display:inline-block;border:1px solid #c9b98e;border-radius:4px;padding:0 5px;font-size:11px;background:#faf3e0;margin:1px}',
     '.tag.retro{background:#fdeaea;border-color:#e0b0b0;color:#a33}',
+    '.humanbox{background:#eef3f7;border:1px solid #d3dde8;border-radius:8px;padding:10px 12px;margin:10px 0;font-size:13.5px}',
     '.score{font-size:30px;color:#8a5a00;font-weight:bold}',
     '.kuta{display:flex;gap:10px;padding:4px 0;border-bottom:1px solid #eee;font-size:12.5px}',
     '.disc{font-size:11px;color:#888;margin-top:24px;border-top:1px solid #eee;padding-top:8px}',
@@ -81,8 +82,18 @@
     sections.forEach(function(s){
       parts.push('<h2>' + esc(s.title) + '</h2>');
       parts.push('<p>' + s.brief + '</p>');
+      if (s.human) parts.push('<div class="humanbox">💡 <b>Простыми словами:</b> ' + s.human + '</div>');
       s.items.forEach(function(it){ parts.push(it); });
     });
+
+    // Словарь терминов
+    var gl = R.GLOSSARY || [];
+    if (gl.length){
+      parts.push('<h2 class="pagebreak">Словарь терминов</h2>');
+      gl.forEach(function(t){
+        parts.push('<p><b>' + esc(t[0]) + '</b> — ' + esc(t[1]) + '</p>');
+      });
+    }
 
     // Варги
     parts.push('<h2 class="pagebreak">Варги (Д-9 навамша и Д-10 дашамша)</h2><table><thead><tr><th>Планета</th><th>Раши (Д-1)</th><th>Навамша (Д-9)</th><th>Дашамша (Д-10)</th></tr></thead><tbody>');
