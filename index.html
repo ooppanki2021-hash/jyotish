@@ -173,22 +173,37 @@
   <section class="panel" id="tab-chat">
     <div class="card">
       <h2>Настройки ИИ-астролога</h2>
-      <p class="muted">Для работы чата нужен бесплатный API-ключ Google Gemini. Он хранится только в вашем браузере и никуда не отправляется (кроме самого Google). Как получить ключ — см. README.</p>
+      <p class="muted">Для чата нужен API-ключ одного из сервисов. Ключ хранится только в вашем браузере и никуда не отправляется (кроме самого сервиса). <b>Из России надёжно работает DeepSeek</b> — выберите его в списке.</p>
       <div class="form-grid">
-        <label>API-ключ Gemini
-          <input type="password" id="s-key" placeholder="AIza...">
+        <label>Провайдер
+          <select id="s-provider">
+            <option value="deepseek">DeepSeek (работает в РФ) ⭐</option>
+            <option value="gemini">Google Gemini</option>
+            <option value="openrouter">OpenRouter</option>
+            <option value="groq">Groq</option>
+            <option value="custom">Другой (OpenAI-совместимый)</option>
+          </select>
+        </label>
+        <label>API-ключ
+          <input type="password" id="s-key" placeholder="вставьте ключ…">
+          <small id="s-key-hint"></small>
         </label>
         <label>Модель
           <input type="text" id="s-model" value="gemini-2.5-flash">
         </label>
+        <label id="s-baseurl-wrap">Base URL (для OpenRouter/Groq/своего)
+          <input type="text" id="s-baseurl" placeholder="https://openrouter.ai/api/v1">
+        </label>
         <div class="form-actions">
-          <button type="button" id="s-save" class="btn">Сохранить</button>
+          <button type="button" id="s-save" class="btn primary">Сохранить</button>
           <span id="s-status" class="muted"></span>
         </div>
       </div>
+      <div class="key-help" id="s-help"></div>
     </div>
     <div class="card chat">
       <h2>Диалог с астрологом</h2>
+      <div id="chat-status" class="chat-status muted">Провайдер: —</div>
       <div id="chat-log" class="chat-log"><div class="chat-empty">Задайте вопрос о вашей карте. Например: «В чём моё призвание?», «Когда ждать улучшения в деньгах?», «Какие у меня слабые места по здоровью?»</div></div>
       <div class="chat-input">
         <input type="text" id="chat-msg" placeholder="Ваш вопрос…">
@@ -200,6 +215,7 @@
 
 <footer class="foot">
   <p>Джйотиш — традиционная система самопознания и духовной ориентации, а не точная наука. Сведения не являются медицинским, юридическим или финансовым советом. Расчёт: сидерический зодиак, аянамша Лахири, эфемериды Astronomy Engine (MIT).</p>
+  <p class="ver">версия сайта: v1.5 (провайдер DeepSeek по умолчанию)</p>
 </footer>
 
 <script src="js/astronomy.min.js"></script>

@@ -1,5 +1,7 @@
 /* ============================================================
-   ИИ-ЧАТ — диалог с астрологом через Gemini API (бесплатный ключ).
+   ИИ-ЧАТ — диалог с астрологом через выбранного провайдера.
+   Поддержка: Google Gemini, OpenRouter, Groq и любого
+   OpenAI-совместимого API (настраиваемый base URL).
    Ключ хранится ТОЛЬКО в localStorage браузера пользователя
    и не попадает в репозиторий.
    ============================================================ */
@@ -13,17 +15,57 @@
 
   var KEY_STORAGE = 'jyotish_api_key';
   var MODEL_STORAGE = 'jyotish_api_model';
-  var DEFAULT_MODEL = 'gemini-2.5-flash';
+  var PROVIDER_STORAGE = 'jyotish_api_provider';
+  var BASEURL_STORAGE = 'jyotish_api_baseurl';
+
+  // Провайдеры
+  var PROVIDERS = {
+    gemini: {
+      label: 'Google Gemini',
+      defaultModel: 'gemini-2.5-flash',
+      defaultBaseUrl: '',
+      keyHint: 'Ключ вида AIza... (Google AI Studio)'
+    },
+    openrouter: {
+      label: 'OpenRouter (может быть недоступен в РФ)',
+      defaultModel: 'qwen/qwen-2.5-72b-instruct:free',
+      defaultBaseUrl: 'https://openrouter.ai/api/v1',
+      keyHint: 'Ключ вида sk-or-... (openrouter.ai)'
+    },
+    deepseek: {
+      label: 'DeepSeek (работает в РФ)',
+      defaultModel: 'deepseek-chat',
+      defaultBaseUrl: 'https://api.deepseek.com',
+      keyHint: 'Ключ вида sk-... (platform.deepseek.com)'
+    },
+    groq: {
+      label: 'Groq (работает в РФ, очень быстро)',
+      defaultModel: 'llama-3.3-70b-versatile',
+      defaultBaseUrl: 'https://api.groq.com/openai/v1',
+      keyHint: 'Ключ вида gsk_... (console.groq.com)'
+    },
+    custom: {
+      label: 'Другой (OpenAI-совместимый)',
+      defaultModel: 'gpt-4o-mini',
+      defaultBaseUrl: 'https://api.openai.com/v1',
+      keyHint: 'Ключ вашего сервиса'
+    }
+  };
 
   function getConfig(){
     var s = {};
     try { s.key = localStorage.getItem(KEY_STORAGE) || ''; } catch(e){ s.key = ''; }
-    try { s.model = localStorage.getItem(MODEL_STORAGE) || DEFAULT_MODEL; } catch(e){ s.model = DEFAULT_MODEL; }
+    try { s.provider = localStorage.getItem(PROVIDER_STORAGE) || 'deepseek'; } catch(e){ s.provider = 'deepseek'; }
+    var prov = PROVIDERS[s.provider] || PROVIDERS.deepseek;
+    try { s.model = localStorage.getItem(MODEL_STORAGE) || prov.defaultModel; } catch(e){ s.model = prov.defaultModel; }
+    try { s.baseUrl = localStorage.getItem(BASEURL_STORAGE) || prov.defaultBaseUrl; } catch(e){ s.baseUrl = prov.defaultBaseUrl; }
     return s;
   }
-  function setConfig(key, model){
+  function setConfig(key, model, provider, baseUrl){
     try { localStorage.setItem(KEY_STORAGE, key || ''); } catch(e){}
-    try { localStorage.setItem(MODEL_STORAGE, model || DEFAULT_MODEL); } catch(e){}
+    try { localStorage.setItem(MODEL_STORAGE, model || ''); } catch(e){}
+    try { localStorage.setItem(PROVIDER_STORAGE, provider || 'deepseek'); } catch(e){}
+    try { localStorage.setItem(BASEURL_STORAGE, baseUrl || ''); } catch(e){}
   }
 
   function fmtDeg(d){
@@ -46,7 +88,6 @@
       lines.push('- ' + pl.ru + ': ' + pl.sign + ' ' + pl.degText + ' (' + pl.house + '-й дом), накшатра ' + pl.nakshatra + (flags.length ? ', ' + flags.join(', ') : ''));
     }
     lines.push('Управитель Лагны: ' + chart.lagnaLord + '. Атмакарака: ' + (chart.planets[chart.atmakaraka] ? chart.planets[chart.atmakaraka].ru : ''));
-    lines.push('Навамша-Лагна (Д-9): ' + chart.planets.Sun.sign + ' (см. Д-9 в таблице)');
     lines.push('Текущий период (Вишоттари): ' + chart.currentMaha.planet + ' махадаша, ' + chart.currentAntar.planet + ' антарадаша.');
     var tr = chart.transits || {};
     if (tr.Saturn) lines.push('Транзиты сейчас: Сатурн в ' + tr.Saturn.sign + ', Юпитер в ' + tr.Jupiter.sign + ', Раху в ' + tr.Rahu.sign + '.');
@@ -71,28 +112,16 @@
     ].join('\n');
   }
 
-  function buildHistory(history){
-    // history: [{role:'user'|'model', text}]
-    return (history||[]).map(function(m){
+  async function sendGemini(cfg, system, message, history){
+    var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + cfg.model + ':generateContent?key=' + encodeURIComponent(cfg.key);
+    var contents = history.map(function(m){
       return { role: m.role === 'model' ? 'model' : 'user', parts: [{ text: m.text }] };
     });
-  }
-
-  async function send(message, history, chart, personName){
-    var cfg = getConfig();
-    if (!cfg.key) throw new Error('NO_KEY');
-    var model = cfg.model || DEFAULT_MODEL;
-    var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + encodeURIComponent(cfg.key);
-    var contents = buildHistory(history);
     contents.push({ role: 'user', parts: [{ text: message }] });
-    var body = {
-      systemInstruction: { parts: [{ text: buildSystem(chart, personName) }] },
-      contents: contents
-    };
     var resp = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+      body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: contents })
     });
     if (!resp.ok){
       var errText = '';
@@ -108,5 +137,44 @@
     return text;
   }
 
-  return { getConfig: getConfig, setConfig: setConfig, send: send, chartToText: chartToText, buildSystem: buildSystem, DEFAULT_MODEL: DEFAULT_MODEL };
+  async function sendOpenAI(cfg, system, message, history){
+    var url = (cfg.baseUrl || '').replace(/\/+$/, '') + '/chat/completions';
+    var messages = [{ role: 'system', content: system }];
+    history.forEach(function(m){ messages.push({ role: m.role === 'model' ? 'assistant' : 'user', content: m.text }); });
+    messages.push({ role: 'user', content: message });
+    var resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cfg.key },
+      body: JSON.stringify({ model: cfg.model, messages: messages, temperature: 0.7 })
+    });
+    if (!resp.ok){
+      var errText = '';
+      try { errText = await resp.text(); } catch(e){}
+      throw new Error('HTTP ' + resp.status + (errText ? ': ' + errText.slice(0,400) : ''));
+    }
+    var data = await resp.json();
+    var text = data && data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : '';
+    if (!text) throw new Error('EMPTY');
+    return text;
+  }
+
+  async function send(message, history, chart, personName){
+    var cfg = getConfig();
+    if (!cfg.key) throw new Error('NO_KEY');
+    var system = buildSystem(chart, personName);
+    if (cfg.provider === 'gemini'){
+      return await sendGemini(cfg, system, message, history);
+    }
+    return await sendOpenAI(cfg, system, message, history);
+  }
+
+  return {
+    getConfig: getConfig,
+    setConfig: setConfig,
+    send: send,
+    chartToText: chartToText,
+    buildSystem: buildSystem,
+    PROVIDERS: PROVIDERS,
+    DEFAULT_MODEL: 'gemini-2.5-flash'
+  };
 }));

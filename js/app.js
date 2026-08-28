@@ -289,11 +289,54 @@
   }
 
   // ---------- Чат ----------
+  function refreshChatStatus(){
+    var cfg = Chat.getConfig();
+    var provName = (Chat.PROVIDERS[cfg.provider] || {}).label || cfg.provider;
+    var status = $('chat-status');
+    if (!status) return;
+    if (!cfg.key){
+      status.innerHTML = 'Провайдер: <b>' + esc(provName) + '</b> · ключ не введён. <a href="#" id="chat-go-settings">Перейти к настройкам ↑</a>';
+    } else {
+      status.innerHTML = 'Провайдер: <b>' + esc(provName) + '</b> · модель ' + esc(cfg.model) + ' · ключ введён ✓';
+    }
+    var link = $('chat-go-settings');
+    if (link) link.addEventListener('click', function(e){
+      e.preventDefault();
+      document.querySelector('.tab[data-tab="chat"]').scrollIntoView({ behavior:'smooth' });
+      $('s-key').focus();
+    });
+  }
   function initChat(){
     var cfg = Chat.getConfig();
-    $('s-key').value = cfg.key; $('s-model').value = cfg.model;
+    $('s-key').value = cfg.key;
+    $('s-provider').value = cfg.provider;
+    $('s-model').value = cfg.model;
+    $('s-baseurl').value = cfg.baseUrl;
+    updateProviderUI();
+    refreshChatStatus();
+    function updateProviderUI(){
+      var prov = Chat.PROVIDERS[$('s-provider').value] || Chat.PROVIDERS.gemini;
+      $('s-key-hint').textContent = prov.keyHint || '';
+      $('s-baseurl-wrap').style.display = (prov.defaultBaseUrl || $('s-provider').value==='custom') ? '' : 'none';
+      if ($('s-baseurl').value === '' ) $('s-baseurl').placeholder = prov.defaultBaseUrl || '';
+      var help = {
+        deepseek: '<b>DeepSeek (работает в РФ):</b> зарегистрируйтесь на <a href="https://platform.deepseek.com/" target="_blank">platform.deepseek.com</a> → «API keys» → Create. Ключ вида <b>sk-...</b>. Модель <b>deepseek-chat</b> (по умолчанию) или <b>deepseek-reasoner</b>. Очень дешёвый, отлично пишет по-русски.',
+        gemini: '<b>Google Gemini:</b> ключ — на <a href="https://aistudio.google.com/" target="_blank">aistudio.google.com</a> → «Get API key». ⚠️ Недоступен в некоторых регионах (в т.ч. в РФ).',
+        openrouter: '<b>OpenRouter:</b> зарегистрируйтесь на <a href="https://openrouter.ai/" target="_blank">openrouter.ai</a> → Keys → Create key. ⚠️ С 2026 года ограничен для РФ — может не выдавать ключ.',
+        groq: '<b>Groq:</b> зарегистрируйтесь на <a href="https://console.groq.com/" target="_blank">console.groq.com</a> → API Keys → Create. ⚠️ Может быть ограничен для РФ.',
+        custom: '<b>Свой сервис:</b> любой OpenAI-совместимый API. Укажите Base URL (например https://api.deepseek.com) и модель.'
+      }[$('s-provider').value] || '';
+      $('s-help').innerHTML = help;
+    }
+    $('s-provider').addEventListener('change', function(){
+      var prov = Chat.PROVIDERS[this.value] || Chat.PROVIDERS.gemini;
+      $('s-model').value = prov.defaultModel || '';
+      $('s-baseurl').value = prov.defaultBaseUrl || '';
+      updateProviderUI();
+    });
     $('s-save').addEventListener('click', function(){
-      Chat.setConfig($('s-key').value.trim(), $('s-model').value.trim());
+      Chat.setConfig($('s-key').value.trim(), $('s-model').value.trim(), $('s-provider').value, $('s-baseurl').value.trim());
+      refreshChatStatus();
       $('s-status').textContent = 'Сохранено ✓';
       setTimeout(function(){ $('s-status').textContent=''; }, 2000);
     });
@@ -303,7 +346,7 @@
       if (!text) return;
       if (!state.chart){ alert('Сначала рассчитайте карту на вкладке «Карта и чтение».'); return; }
       var cfg = Chat.getConfig();
-      if (!cfg.key){ alert('Введите API-ключ Gemini в настройках выше.'); return; }
+      if (!cfg.key){ alert('Введите API-ключ в настройках выше.'); return; }
       input.value = '';
       addMsg('user', text);
       state.chatHistory.push({ role:'user', text:text });
@@ -312,8 +355,14 @@
         replaceLastMsg(reply);
         state.chatHistory.push({ role:'model', text:reply });
       }).catch(function(err){
-        var msg = err.message === 'NO_KEY' ? 'Нужен API-ключ Gemini.' :
-          'Ошибка запроса: ' + err.message + '. Проверьте ключ и модель в настройках.';
+        var msg = err.message === 'NO_KEY' ? 'Нужен API-ключ (введите в настройках).' :
+          'Ошибка запроса: ' + err.message + '. Проверьте ключ, провайдера и модель в настройках.';
+        // умная подсказка: ключ не того провайдера
+        if (err.message.indexOf('googleapis') >= 0 || err.message.indexOf('API_KEY_INVALID') >= 0 || err.message.indexOf('API key not valid') >= 0){
+          msg = 'Похоже, ключ не подходит к выбранному провайдеру: запрос ушёл в Google Gemini, а ключ — от другого сервиса. Откройте настройки выше и в поле «Провайдер» выберите <b>DeepSeek</b> (или тот сервис, от которого у вас ключ), затем снова нажмите «Сохранить».';
+        } else if (err.message.indexOf('401') >= 0 || err.message.indexOf('Unauthorized') >= 0){
+          msg = 'Ошибка авторизации — похоже, ключ неверный или не подходит к выбранному провайдеру. Проверьте, что в поле «Провайдер» выбран тот сервис, от которого у вас ключ, и ключ скопирован целиком (без пробелов).';
+        }
         replaceLastMsg('<i>'+esc(msg)+'</i>', true);
         state.chatHistory.pop();
       });
