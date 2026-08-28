@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Джйотиш — ведический астролог</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <div class="om">ॐ</div>
+    <div>
+      <h1>Джйотиш</h1>
+      <p class="sub">ведическая астрология · точный расчёт · личный астролог</p>
+    </div>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-tab="natal">Карта и чтение</button>
+    <button class="tab" data-tab="predict">Прогностика</button>
+    <button class="tab" data-tab="compat">Совместимость</button>
+    <button class="tab" data-tab="muhurta">Мухурта</button>
+    <button class="tab" data-tab="chat">Спросить астролога</button>
+  </nav>
+</header>
+
+<main>
+  <!-- ============ НАТАЛ ============ -->
+  <section class="panel active" id="tab-natal">
+    <form id="natal-form" class="card form-grid" autocomplete="off">
+      <h2>Данные рождения</h2>
+      <label>Имя (необязательно)
+        <input type="text" id="f-name" placeholder="Например: Анна">
+      </label>
+      <label>Дата рождения
+        <input type="date" id="f-date" value="1984-04-27">
+      </label>
+      <label>Время рождения
+        <input type="time" id="f-time" value="00:40">
+      </label>
+      <label>Город
+        <select id="f-city">
+          <option value="custom">— другой город —</option>
+          <option value="vladikavkaz" selected>Владикавказ</option>
+          <option value="moscow">Москва</option>
+          <option value="spb">Санкт-Петербург</option>
+          <option value="ekb">Екатеринбург</option>
+          <option value="nsk">Новосибирск</option>
+          <option value="vladivostok">Владивосток</option>
+          <option value="minsk">Минск</option>
+          <option value="kiev">Киев</option>
+          <option value="almaty">Алматы</option>
+          <option value="tashkent">Ташкент</option>
+        </select>
+      </label>
+      <label>Широта (°, +север)
+        <input type="number" id="f-lat" step="any" value="43.02">
+      </label>
+      <label>Долгота (°, +восток)
+        <input type="number" id="f-lon" step="any" value="44.68">
+      </label>
+      <label>Часовой пояс (UTC, восток = +)
+        <input type="number" id="f-tz" step="0.5" value="4">
+        <small>Если родились летом и был перевод часов — скорректируйте вручную. Пример: Владикавказ летом 1984 = +4, зимой = +3.</small>
+      </label>
+      <div class="form-actions">
+        <button type="submit" class="btn primary">Рассчитать карту</button>
+      </div>
+    </form>
+
+    <div id="natal-result" class="hidden">
+      <div id="chart-summary"></div>
+      <div class="toolbar">
+        <button type="button" id="btn-print" class="btn primary">🖨 Печать / PDF</button>
+        <button type="button" id="btn-save" class="btn">⬇ Сохранить разбор (HTML)</button>
+      </div>
+      <div class="card" id="chart-table-wrap"><h2>Положения планет</h2><div id="chart-table"></div></div>
+      <div id="reading"></div>
+      <div class="card" id="vargas-wrap"><h2>Варги (Д-9 и Д-10)</h2><div id="vargas"></div></div>
+    </div>
+  </section>
+
+  <!-- ============ ПРОГНОСТИКА ============ -->
+  <section class="panel" id="tab-predict">
+    <div id="predict-empty" class="card">Сначала рассчитайте карту на вкладке «Карта и чтение».</div>
+    <div id="predict-result" class="hidden">
+      <div class="card"><h2>Текущий период (Вишоттари-даша)</h2><div id="dasha-current"></div></div>
+      <div class="card"><h2>Махадаши (главные периоды жизни)</h2><div id="dasha-table"></div></div>
+      <div class="card"><h2>Транзиты сейчас</h2><div id="transits"></div></div>
+      <div class="card"><h2>Годовой прогноз (варшапхал)</h2><div id="varshaphal"></div></div>
+    </div>
+  </section>
+
+  <!-- ============ СОВМЕСТИМОСТЬ ============ -->
+  <section class="panel" id="tab-compat">
+    <div class="two-col">
+      <form id="compat1" class="card form-grid compact">
+        <h2>Партнёр 1</h2>
+        <label>Имя <input type="text" class="c-name" placeholder="Имя"></label>
+        <label>Дата <input type="date" class="c-date" value="1984-04-27"></label>
+        <label>Время <input type="time" class="c-time" value="00:40"></label>
+        <label>Широта <input type="number" class="c-lat" step="any" value="43.02"></label>
+        <label>Долгота <input type="number" class="c-lon" step="any" value="44.68"></label>
+        <label>Пояс UTC <input type="number" class="c-tz" step="0.5" value="4"></label>
+      </form>
+      <form id="compat2" class="card form-grid compact">
+        <h2>Партнёр 2</h2>
+        <label>Имя <input type="text" class="c-name" placeholder="Имя"></label>
+        <label>Дата <input type="date" class="c-date" value="1979-09-10"></label>
+        <label>Время <input type="time" class="c-time" value="06:00"></label>
+        <label>Широта <input type="number" class="c-lat" step="any" value="43.02"></label>
+        <label>Долгота <input type="number" class="c-lon" step="any" value="44.68"></label>
+        <label>Пояс UTC <input type="number" class="c-tz" step="0.5" value="3"></label>
+      </form>
+    </div>
+    <div class="form-actions center">
+      <button type="button" id="compat-btn" class="btn primary">Рассчитать совместимость</button>
+    </div>
+    <div id="compat-result" class="hidden"></div>
+    <div id="synastry-result" class="hidden"></div>
+  </section>
+
+
+  <!-- ============ МУХУРТА ============ -->
+  <section class="panel" id="tab-muhurta">
+    <div class="card">
+      <h2>Выбор благоприятного времени (мухурта)</h2>
+      <p class="muted">Подбор удачных дат и часов для важных дел по панчанге: титхи (лунный день), вара (день недели), накшатра, а также исключение Раху-калы, Ямаганды и Гулики.</p>
+      <div class="form-grid">
+        <label>Широта (°, +север)
+          <input type="number" id="m-lat" step="any" value="43.02">
+        </label>
+        <label>Долгота (°, +восток)
+          <input type="number" id="m-lon" step="any" value="44.68">
+        </label>
+        <label>Часовой пояс (UTC, восток = +)
+          <input type="number" id="m-tz" step="0.5" value="3">
+        </label>
+        <label>Что планируете
+          <select id="m-activity">
+            <option value="general">Важное дело / встреча</option>
+            <option value="business">Начало бизнеса / дела</option>
+            <option value="marriage">Брак / помолвка</option>
+            <option value="property">Недвижимость / новоселье</option>
+            <option value="travel">Путешествие / поездка</option>
+            <option value="education">Начало обучения</option>
+            <option value="finance">Финансовые операции</option>
+            <option value="health">Медицинская процедура</option>
+          </select>
+        </label>
+        <label>Горизонт поиска (дней)
+          <input type="number" id="m-days" min="1" max="30" value="7">
+        </label>
+        <div class="form-actions">
+          <button type="button" id="m-go" class="btn primary">Найти благоприятное время</button>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="m-panchanga"><h2>Панчанга на сегодня</h2><div id="m-panchanga-body" class="muted">Нажмите «Найти…» или «Панчанга» — расчёт появится здесь.</div></div>
+    <div id="m-result" class="hidden"></div>
+  </section>
+
+  <!-- ============ ЧАТ ============ -->
+  <section class="panel" id="tab-chat">
+    <div class="card">
+      <h2>Настройки ИИ-астролога</h2>
+      <p class="muted">Для работы чата нужен бесплатный API-ключ Google Gemini. Он хранится только в вашем браузере и никуда не отправляется (кроме самого Google). Как получить ключ — см. README.</p>
+      <div class="form-grid">
+        <label>API-ключ Gemini
+          <input type="password" id="s-key" placeholder="AIza...">
+        </label>
+        <label>Модель
+          <input type="text" id="s-model" value="gemini-2.5-flash">
+        </label>
+        <div class="form-actions">
+          <button type="button" id="s-save" class="btn">Сохранить</button>
+          <span id="s-status" class="muted"></span>
+        </div>
+      </div>
+    </div>
+    <div class="card chat">
+      <h2>Диалог с астрологом</h2>
+      <div id="chat-log" class="chat-log"><div class="chat-empty">Задайте вопрос о вашей карте. Например: «В чём моё призвание?», «Когда ждать улучшения в деньгах?», «Какие у меня слабые места по здоровью?»</div></div>
+      <div class="chat-input">
+        <input type="text" id="chat-msg" placeholder="Ваш вопрос…">
+        <button type="button" id="chat-send" class="btn primary">→</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <p>Джйотиш — традиционная система самопознания и духовной ориентации, а не точная наука. Сведения не являются медицинским, юридическим или финансовым советом. Расчёт: сидерический зодиак, аянамша Лахири, эфемериды Astronomy Engine (MIT).</p>
+</footer>
+
+<script src="js/astronomy.min.js"></script>
+<script src="js/jyotish.js"></script>
+<script src="js/reading.js"></script>
+<script src="js/compat.js"></script>
+<script src="js/synastry.js"></script>
+<script src="js/report.js"></script>
+<script src="js/muhurta.js"></script>
+<script src="js/varshaphal.js"></script>
+<script src="js/chat.js"></script>
+<script src="js/app.js"></script>
+<iframe id="print-frame" title="print" style="display:none"></iframe>
+</body>
+</html>
