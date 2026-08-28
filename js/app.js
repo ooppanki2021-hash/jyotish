@@ -315,12 +315,15 @@
     updateProviderUI();
     refreshChatStatus();
     function updateProviderUI(){
-      var prov = Chat.PROVIDERS[$('s-provider').value] || Chat.PROVIDERS.gemini;
+      var prov = Chat.PROVIDERS[$('s-provider').value] || Chat.PROVIDERS.cloudflare;
       $('s-key-hint').textContent = prov.keyHint || '';
-      $('s-baseurl-wrap').style.display = (prov.defaultBaseUrl || $('s-provider').value==='custom') ? '' : 'none';
-      if ($('s-baseurl').value === '' ) $('s-baseurl').placeholder = prov.defaultBaseUrl || '';
+      var noKey = $('s-provider').value === 'gigachat' || $('s-provider').value === 'cloudflare';
+      $('s-baseurl-wrap').style.display = (prov.defaultBaseUrl || noKey || $('s-provider').value==='custom') ? '' : 'none';
+      if ($('s-baseurl').value === '' ) $('s-baseurl').placeholder = noKey ? 'https://ваш-worker.workers.dev' : (prov.defaultBaseUrl || '');
       var help = {
-        deepseek: '<b>DeepSeek (работает в РФ):</b> зарегистрируйтесь на <a href="https://platform.deepseek.com/" target="_blank">platform.deepseek.com</a> → «API keys» → Create. Ключ вида <b>sk-...</b>. Модель <b>deepseek-chat</b> (по умолчанию) или <b>deepseek-reasoner</b>. Очень дешёвый, отлично пишет по-русски.',
+        cloudflare: '<b>Cloudflare Workers AI (бесплатно, проще всего):</b> 1) зарегистрируйтесь на <a href="https://dash.cloudflare.com/" target="_blank">dash.cloudflare.com</a> (бесплатно); 2) Workers & Pages → Create → Create Worker → имя (например astro-ai) → Deploy; 3) Edit code → вставьте целиком код из файла <b>cloudflare-ai-worker.js</b> (в архиве); 4) добавьте привязку (binding) типа <b>AI</b> с именем <b>AI</b>; 5) Deploy; 6) в поле «Base URL» ниже вставьте адрес Worker (вида https://astro-ai.ваш-логин.workers.dev). Поле «API-ключ» оставьте пустым. Бесплатный лимит — 10 000 токенов/день, для личного чата достаточно.',
+        gigachat: '<b>GigaChat (Сбер, бесплатно):</b> 1 млн токенов/мес бесплатно. 1) на <a href="https://developers.sber.ru/" target="_blank">developers.sber.ru</a> создайте проект GigaChat API и получите Client ID + Client Secret; 2) на <a href="https://dash.cloudflare.com/" target="_blank">dash.cloudflare.com</a> создайте бесплатный Worker и вставьте код из файла <b>gigachat-worker.js</b>, в настройках укажите GIGACHAT_CLIENT_ID и GIGACHAT_CLIENT_SECRET; 3) в поле «Base URL» вставьте адрес Worker. Ключ можно оставить пустым.',
+        deepseek: '<b>DeepSeek:</b> зарегистрируйтесь на <a href="https://platform.deepseek.com/" target="_blank">platform.deepseek.com</a> → «API keys» → Create. Ключ вида <b>sk-...</b>. Модель <b>deepseek-chat</b>. ⚠️ Требует небольшой баланс (пополнение), не бесплатен.',
         gemini: '<b>Google Gemini:</b> ключ — на <a href="https://aistudio.google.com/" target="_blank">aistudio.google.com</a> → «Get API key». ⚠️ Недоступен в некоторых регионах (в т.ч. в РФ).',
         openrouter: '<b>OpenRouter:</b> зарегистрируйтесь на <a href="https://openrouter.ai/" target="_blank">openrouter.ai</a> → Keys → Create key. ⚠️ С 2026 года ограничен для РФ — может не выдавать ключ.',
         groq: '<b>Groq:</b> зарегистрируйтесь на <a href="https://console.groq.com/" target="_blank">console.groq.com</a> → API Keys → Create. ⚠️ Может быть ограничен для РФ.',
@@ -346,7 +349,9 @@
       if (!text) return;
       if (!state.chart){ alert('Сначала рассчитайте карту на вкладке «Карта и чтение».'); return; }
       var cfg = Chat.getConfig();
-      if (!cfg.key){ alert('Введите API-ключ в настройках выше.'); return; }
+      var noKey = cfg.provider === 'gigachat' || cfg.provider === 'cloudflare';
+      if (!noKey && !cfg.key){ alert('Введите API-ключ в настройках выше.'); return; }
+      if (noKey && !cfg.baseUrl){ alert('Вставьте адрес вашего Cloudflare Worker в поле «Base URL».'); return; }
       input.value = '';
       addMsg('user', text);
       state.chatHistory.push({ role:'user', text:text });
@@ -356,7 +361,8 @@
         state.chatHistory.push({ role:'model', text:reply });
       }).catch(function(err){
         var msg = err.message === 'NO_KEY' ? 'Нужен API-ключ (введите в настройках).' :
-          'Ошибка запроса: ' + err.message + '. Проверьте ключ, провайдера и модель в настройках.';
+          (err.message === 'GIGACHAT_NO_URL' || err.message === 'CF_NO_URL' ? 'Нужно указать адрес вашего Cloudflare Worker в поле «Base URL» (см. подсказку при выборе провайдера).' :
+          'Ошибка запроса: ' + err.message + '. Проверьте ключ, провайдера и модель в настройках.');
         // умная подсказка: ключ не того провайдера
         if (err.message.indexOf('googleapis') >= 0 || err.message.indexOf('API_KEY_INVALID') >= 0 || err.message.indexOf('API key not valid') >= 0){
           msg = 'Похоже, ключ не подходит к выбранному провайдеру: запрос ушёл в Google Gemini, а ключ — от другого сервиса. Откройте настройки выше и в поле «Провайдер» выберите <b>DeepSeek</b> (или тот сервис, от которого у вас ключ), затем снова нажмите «Сохранить».';

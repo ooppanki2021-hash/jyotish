@@ -33,10 +33,22 @@
       keyHint: 'Ключ вида sk-or-... (openrouter.ai)'
     },
     deepseek: {
-      label: 'DeepSeek (работает в РФ)',
+      label: 'DeepSeek (нужен небольшой баланс)',
       defaultModel: 'deepseek-chat',
       defaultBaseUrl: 'https://api.deepseek.com',
       keyHint: 'Ключ вида sk-... (platform.deepseek.com)'
+    },
+    gigachat: {
+      label: 'GigaChat (Сбер, бесплатно)',
+      defaultModel: 'GigaChat',
+      defaultBaseUrl: '',
+      keyHint: 'Сюда вставьте URL вашего Cloudflare Worker (см. файл gigachat-worker.js)'
+    },
+    cloudflare: {
+      label: 'Cloudflare Workers AI (бесплатно, проще всего)',
+      defaultModel: '@cf/meta/llama-3.1-8b-instruct',
+      defaultBaseUrl: '',
+      keyHint: 'Ключ НЕ нужен. Вставьте адрес вашего Worker в поле Base URL (см. cloudflare-ai-worker.js)'
     },
     groq: {
       label: 'Groq (работает в РФ, очень быстро)',
@@ -148,14 +160,16 @@
     return text;
   }
 
-  async function sendOpenAI(cfg, system, message, history){
+  async function sendOpenAI(cfg, system, message, history, noAuth){
     var url = (cfg.baseUrl || '').replace(/\/+$/, '') + '/chat/completions';
     var messages = [{ role: 'system', content: system }];
     history.forEach(function(m){ messages.push({ role: m.role === 'model' ? 'assistant' : 'user', content: m.text }); });
     messages.push({ role: 'user', content: message });
+    var headers = { 'Content-Type': 'application/json' };
+    if (!noAuth && cfg.key) headers['Authorization'] = 'Bearer ' + cfg.key;
     var resp = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cfg.key },
+      headers: headers,
       body: JSON.stringify({ model: cfg.model, messages: messages, temperature: 0.7 })
     });
     if (!resp.ok){
@@ -171,7 +185,8 @@
 
   async function send(message, history, chart, personName){
     var cfg = getConfig();
-    if (!cfg.key) throw new Error('NO_KEY');
+    // GigaChat и Cloudflare работают через Worker — ключ не нужен
+    if (cfg.provider !== 'gigachat' && cfg.provider !== 'cloudflare' && !cfg.key) throw new Error('NO_KEY');
     // АВТО-МАРШРУТИЗАЦИЯ: если ключ не подходит к выбранному провайдеру — переключаем сами
     var detected = detectProviderFromKey(cfg.key);
     if (detected && detected !== cfg.provider){
@@ -186,7 +201,37 @@
     if (cfg.provider === 'gemini'){
       return await sendGemini(cfg, system, message, history);
     }
+    if (cfg.provider === 'gigachat'){
+      if (!cfg.baseUrl) throw new Error('GIGACHAT_NO_URL');
+      return await sendOpenAI(cfg, system, message, history, true);
+    }
+    if (cfg.provider === 'cloudflare'){
+      if (!cfg.baseUrl) throw new Error('CF_NO_URL');
+      return await sendCloudflare(cfg, system, message, history);
+    }
     return await sendOpenAI(cfg, system, message, history);
+  }
+
+  // Cloudflare Workers AI: формат ответа отличается ({ response: ... })
+  async function sendCloudflare(cfg, system, message, history){
+    var url = (cfg.baseUrl || '').replace(/\/+$/, '');
+    var messages = [{ role: 'system', content: system }];
+    history.forEach(function(m){ messages.push({ role: m.role === 'model' ? 'assistant' : 'user', content: m.text }); });
+    messages.push({ role: 'user', content: message });
+    var resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: cfg.model, messages: messages })
+    });
+    if (!resp.ok){
+      var errText = '';
+      try { errText = await resp.text(); } catch(e){}
+      throw new Error('HTTP ' + resp.status + (errText ? ': ' + errText.slice(0,400) : ''));
+    }
+    var data = await resp.json();
+    var text = data && data.response ? data.response : '';
+    if (!text) throw new Error('EMPTY');
+    return text;
   }
 
   return {

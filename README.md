@@ -58,29 +58,47 @@
 
 Ключ хранится **только в вашем браузере** (localStorage) и **не попадает** в код и репозиторий. Он отправляется только напрямую в выбранный сервис при запросе.
 
-### ⭐ Вариант 1 — DeepSeek (рекомендуется, работает из России)
-1. Зарегистрируйтесь на [platform.deepseek.com](https://platform.deepseek.com/).
-2. Раздел **API keys → Create API key** — получите ключ вида `sk-...`.
-3. На сайте выберите провайдера **DeepSeek** и вставьте ключ.
-4. Модель по умолчанию — `deepseek-chat` (отлично пишет по-русски, очень дёшево).
+### ⭐ Вариант 1 — Cloudflare Workers AI (бесплатно, проще всего)
+Самый простой бесплатный вариант: нужен **только аккаунт Cloudflare** (бесплатно), без ключей, без оплаты и без сторонних сервисов. Бесплатный лимит — 10 000 токенов/день (для личного чата достаточно).
 
-### Вариант 2 — OpenRouter (⚠️ с 2026 г. ограничен для РФ)
+1. Зарегистрируйтесь на [dash.cloudflare.com](https://dash.cloudflare.com/).
+2. **Workers & Pages → Create → Create Worker** → имя (например `astro-ai`) → **Deploy**.
+3. **Edit code** → вставьте целиком код из файла `cloudflare-ai-worker.js` → **Deploy**.
+4. Добавьте привязку ИИ: в настройках Worker найдите **Bindings** → добавьте binding типа **AI** с именем `AI`.
+5. Скопируйте адрес Worker (вида `https://astro-ai.ВАШ-ЛОГИН.workers.dev`).
+6. На сайте: вкладка «Спросить астролога» → провайдер **Cloudflare** → в поле **Base URL** вставьте адрес Worker → поле «API-ключ» оставьте пустым → **Сохранить**.
+
+Модель по умолчанию `@cf/meta/llama-3.1-8b-instruct`. Можно заменить на `@cf/meta/llama-3.2-3b-instruct` (быстрее) или `@cf/deepseek-ai/deepseek-r1-distill-qwen-32b` (умнее).
+
+### Вариант 2 — GigaChat от Сбера (бесплатно, работает в РФ)
+GigaChat даёт **1 млн токенов в месяц бесплатно**. Из-за особенностей авторизации нужен крошечный бесплатный посредник (Cloudflare Worker) — код уже готов в файле `gigachat-worker.js`.
+
+1. Получите ключи GigaChat: зарегистрируйтесь на [developers.sber.ru](https://developers.sber.ru/) (или smartspeech.sber.ru), создайте проект **GigaChat API**, в настройках нажмите «Получить ключ» — получите **Client ID** и **Client Secret**.
+2. Создайте бесплатный Worker: на [dash.cloudflare.com](https://dash.cloudflare.com/) → **Workers & Pages → Create → Create Worker** → имя (например `gigachat-proxy`) → **Deploy** → **Edit code**.
+3. Вставьте целиком код из файла `gigachat-worker.js`, нажмите **Deploy**.
+4. В настройках Worker: **Settings → Variables** → добавьте две переменные `GIGACHAT_CLIENT_ID` и `GIGACHAT_CLIENT_SECRET` (значения из шага 1).
+5. Скопируйте адрес Worker (вида `https://gigachat-proxy.ВАШ-ЛОГИН.workers.dev`).
+6. На сайте: вкладка «Спросить астролога» → провайдер **GigaChat** → в поле **Base URL** вставьте адрес Worker → поле «API-ключ» можно оставить пустым → **Сохранить**.
+
+### Вариант 3 — DeepSeek (⚠️ требуется небольшой баланс)
+1. Зарегистрируйтесь на [platform.deepseek.com](https://platform.deepseek.com/).
+2. **API keys → Create** — ключ вида `sk-...`.
+3. На сайте выберите **DeepSeek**, вставьте ключ.
+4. Модель `deepseek-chat`. Очень дёшево, но нужно пополнить баланс (оплата из РФ может быть затруднена).
+
+### Вариант 4 — OpenRouter (⚠️ с 2026 г. ограничен для РФ)
 1. Зарегистрируйтесь на [openrouter.ai](https://openrouter.ai/).
 2. **Keys → Create Key** — ключ вида `sk-or-...`.
-3. Модель `qwen/qwen-2.5-72b-instruct:free` (бесплатная) или другие с суффиксом `:free`.
-> ⚠️ С мая–июля 2026 OpenRouter ограничивает пользователей из России (в т.ч. выдачу ключей). Если не получается — используйте DeepSeek.
+> ⚠️ С мая–июля 2026 OpenRouter ограничивает пользователей из России (в т.ч. выдачу ключей).
 
-### Вариант 3 — Groq (⚠️ может быть ограничен для РФ)
+### Вариант 5 — Groq (⚠️ может быть ограничен для РФ)
 1. Зарегистрируйтесь на [console.groq.com](https://console.groq.com/).
 2. **API Keys → Create API Key** — ключ вида `gsk_...`.
-3. Модель `llama-3.3-70b-versatile`.
 
-### Вариант 4 — Google Gemini (⚠️ недоступен в РФ)
-1. [Google AI Studio](https://aistudio.google.com/) → **Get API key**.
-2. Модель `gemini-2.5-flash`.
-> ⚠️ Gemini API недоступен в некоторых регионах (в т.ч. в России).
+### Вариант 6 — Google Gemini (⚠️ недоступен в РФ)
+1. [Google AI Studio](https://aistudio.google.com/) → **Get API key** → `gemini-2.5-flash`.
 
-### Вариант 5 — любой OpenAI-совместимый сервис
+### Вариант 7 — любой OpenAI-совместимый сервис
 Выберите «Другой», укажите Base URL (например `https://api.deepseek.com`) и свою модель.
 
 ---

@@ -173,11 +173,13 @@
   <section class="panel" id="tab-chat">
     <div class="card">
       <h2>Настройки ИИ-астролога</h2>
-      <p class="muted">Для чата нужен API-ключ одного из сервисов. Ключ хранится только в вашем браузере и никуда не отправляется (кроме самого сервиса). <b>Из России надёжно работает DeepSeek</b> — выберите его в списке.</p>
+      <p class="muted">Самый простой бесплатный вариант — <b>Cloudflare Workers AI</b>: нужен только бесплатный аккаунт Cloudflare, без ключей и оплаты. Инструкция — в подсказке при выборе провайдера.</p>
       <div class="form-grid">
         <label>Провайдер
           <select id="s-provider">
-            <option value="deepseek">DeepSeek (работает в РФ) ⭐</option>
+            <option value="cloudflare">Cloudflare (бесплатно, проще всего) ⭐</option>
+            <option value="gigachat">GigaChat (Сбер, бесплатно)</option>
+            <option value="deepseek">DeepSeek (нужен баланс)</option>
             <option value="gemini">Google Gemini</option>
             <option value="openrouter">OpenRouter</option>
             <option value="groq">Groq</option>
@@ -215,7 +217,7 @@
 
 <footer class="foot">
   <p>Джйотиш — традиционная система самопознания и духовной ориентации, а не точная наука. Сведения не являются медицинским, юридическим или финансовым советом. Расчёт: сидерический зодиак, аянамша Лахири, эфемериды Astronomy Engine (MIT).</p>
-  <p class="ver">версия сайта: v1.6 (авто-выбор провайдера по ключу)</p>
+  <p class="ver">версия сайта: v1.8 (Cloudflare Workers AI — бесплатно)</p>
 </footer>
 
 <script src="js/astronomy.min.js"></script>
