@@ -73,6 +73,17 @@
     return dd + '°' + (mi<10?'0':'') + mi + "'";
   }
 
+  // Автоопределение провайдера по формату ключа
+  function detectProviderFromKey(key){
+    if (!key) return null;
+    var k = key.trim();
+    if (k.indexOf('AIza') === 0) return 'gemini';
+    if (k.indexOf('gsk_') === 0) return 'groq';
+    if (k.indexOf('sk-or-') === 0) return 'openrouter';
+    if (k.indexOf('sk-') === 0) return 'deepseek'; // DeepSeek и большинство OpenAI-совместимых используют sk-
+    return null;
+  }
+
   // Текстовое описание карты для передачи модели
   function chartToText(chart){
     var lines = [];
@@ -161,6 +172,16 @@
   async function send(message, history, chart, personName){
     var cfg = getConfig();
     if (!cfg.key) throw new Error('NO_KEY');
+    // АВТО-МАРШРУТИЗАЦИЯ: если ключ не подходит к выбранному провайдеру — переключаем сами
+    var detected = detectProviderFromKey(cfg.key);
+    if (detected && detected !== cfg.provider){
+      var prov = PROVIDERS[detected] || PROVIDERS.deepseek;
+      cfg.provider = detected;
+      if (detected === 'deepseek' || detected === 'groq' || detected === 'openrouter'){
+        cfg.model = prov.defaultModel;
+        cfg.baseUrl = prov.defaultBaseUrl;
+      }
+    }
     var system = buildSystem(chart, personName);
     if (cfg.provider === 'gemini'){
       return await sendGemini(cfg, system, message, history);
@@ -174,7 +195,8 @@
     send: send,
     chartToText: chartToText,
     buildSystem: buildSystem,
+    detectProviderFromKey: detectProviderFromKey,
     PROVIDERS: PROVIDERS,
-    DEFAULT_MODEL: 'gemini-2.5-flash'
+    DEFAULT_MODEL: 'deepseek-chat'
   };
 }));
