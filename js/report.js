@@ -37,6 +37,7 @@
     '.tag{display:inline-block;border:1px solid #c9b98e;border-radius:4px;padding:0 5px;font-size:11px;background:#faf3e0;margin:1px}',
     '.tag.retro{background:#fdeaea;border-color:#e0b0b0;color:#a33}',
     '.humanbox{background:#eef3f7;border:1px solid #d3dde8;border-radius:8px;padding:10px 12px;margin:10px 0;font-size:13.5px}',
+    '.formula{background:#f6ead2;border:1px solid #e2d0a8;border-left:3px solid #b98a3a;border-radius:8px;padding:10px 12px;margin:10px 0;font-size:13.5px}',
     '.score{font-size:30px;color:#8a5a00;font-weight:bold}',
     '.kuta{display:flex;gap:10px;padding:4px 0;border-bottom:1px solid #eee;font-size:12.5px}',
     '.disc{font-size:11px;color:#888;margin-top:24px;border-top:1px solid #eee;padding-top:8px}',

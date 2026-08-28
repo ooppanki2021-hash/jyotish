@@ -127,6 +127,51 @@
   // Сожжение (градусы до Солнца)
   var COMBUST_DEG = { Sun:0, Moon:12, Mercury:14, Venus:10, Mars:17, Jupiter:11, Saturn:15 };
 
+  // Аспекты (граха-дришти) по целым знакам
+  var ASPECT_OFFSETS = {
+    Sun:[6], Moon:[6], Mercury:[6], Venus:[6],
+    Mars:[3,6,7], Jupiter:[4,6,8], Saturn:[2,6,9],
+    Rahu:[4,6,8], Ketu:[4,6,8]
+  };
+  var ASPECT_NAME = { 6:'7-й дом (оппозиция)', 3:'4-й дом', 7:'8-й дом', 4:'5-й дом', 8:'9-й дом', 2:'3-й дом', 9:'10-й дом' };
+
+  function computeAspects(res){
+    var ascSign = res.lagna.signIdx;
+    var order = ['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn','Rahu','Ketu'];
+    var aspects = [];
+    order.forEach(function(from){
+      var pl = res.planets[from];
+      var offs = ASPECT_OFFSETS[from] || [6];
+      offs.forEach(function(off){
+        var toSign = (pl.signIdx + off) % 12;
+        var toHouse = (toSign - ascSign + 12) % 12 + 1;
+        var targets = order.filter(function(t){
+          return t !== from && res.planets[t].signIdx === toSign;
+        }).map(function(t){ return res.planets[t].ru; });
+        aspects.push({
+          from: from, fromRu: pl.ru, fromHouse: pl.house,
+          off: off, aspectName: ASPECT_NAME[off],
+          toSign: toSign, toSignName: SIGNS[toSign], toHouse: toHouse,
+          targets: targets
+        });
+      });
+    });
+    return aspects;
+  }
+  // Проверить: аспектирует ли планета `name` дом `house`
+  function planetAspectsHouse(res, name, house){
+    var ascSign = res.lagna.signIdx;
+    var pl = res.planets[name];
+    if (!pl) return false;
+    var offs = ASPECT_OFFSETS[name] || [6];
+    for (var i=0;i<offs.length;i++){
+      var toSign = (pl.signIdx + offs[i]) % 12;
+      var toHouse = (toSign - ascSign + 12) % 12 + 1;
+      if (toHouse === house) return true;
+    }
+    return false;
+  }
+
   // Вишоттари-даша
   function vimshottari(moonSidLon, birthDate){
     var n = Math.floor(moonSidLon / (360/27));
@@ -286,6 +331,9 @@
     res.currentAntar = curAnt;
     res.currentAntarList = ant;
 
+    // Аспекты (граха-дришти)
+    res.aspects = computeAspects(res);
+
     return res;
   }
 
@@ -328,6 +376,8 @@
     vimshottari: vimshottari,
     antardasha: antardasha,
     transits: transits,
+    computeAspects: computeAspects,
+    planetAspectsHouse: planetAspectsHouse,
     NAK_YEARS_MAP: NAK_YEARS
   };
 }));
