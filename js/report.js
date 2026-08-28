@@ -28,6 +28,7 @@
     'h1{font-size:24px;margin:0 0 4px;color:#8a5a00}',
     'h2{font-size:17px;color:#8a5a00;border-bottom:1px solid #d9c08a;padding-bottom:4px;margin:22px 0 10px}',
     'h3{font-size:15px;color:#6b4a00;margin:16px 0 6px}',
+    'h4{font-size:13px;color:#8a6d2f;margin:12px 0 4px;text-transform:uppercase;letter-spacing:.4px}',
     'p{margin:6px 0}',
     'table{width:100%;border-collapse:collapse;font-size:12.5px;margin:8px 0}',
     'th,td{border:1px solid #d8cfbc;padding:5px 7px;text-align:left}',
@@ -79,7 +80,8 @@
     var sections = R.generateReading(chart);
     sections.forEach(function(s){
       parts.push('<h2>' + esc(s.title) + '</h2>');
-      s.items.forEach(function(it){ parts.push('<p>' + it + '</p>'); });
+      parts.push('<p>' + s.brief + '</p>');
+      s.items.forEach(function(it){ parts.push(it); });
     });
 
     // Варги

@@ -102,12 +102,42 @@
       '<table><thead><tr><th>Планета</th><th>Знак</th><th>Градус</th><th>Дом</th><th>Накшатра</th><th>Пада</th><th>Статус</th></tr></thead><tbody>' + rows + '</tbody></table>';
   }
 
+  var readingCounter = 0;
   function renderReading(chart){
     var sections = Reading.generateReading(chart);
+    readingCounter = 0;
     var html = sections.map(function(s){
-      return '<div class="card reading-section"><h3>'+esc(s.title)+'</h3>' + s.items.map(function(it){ return '<p>'+it+'</p>'; }).join('') + '</div>';
+      var id = readingCounter++;
+      var briefHtml = '<div class="brief">' + s.brief + '</div>';
+      var detailHtml = '<div class="detail" id="rd-detail-'+id+'" style="display:none">' + s.items.join('') + '</div>';
+      var btn = '<button type="button" class="read-more" data-target="'+id+'">читать подробно ▾</button>';
+      return '<div class="card reading-section"><div class="sec-head"><h3>'+esc(s.title)+'</h3>'+btn+'</div>'+briefHtml+detailHtml+'</div>';
     }).join('');
     $('reading').innerHTML = html;
+    // делегирование кликов по кнопкам «читать подробно»
+    var readEl = $('reading');
+    readEl.querySelectorAll('.read-more').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var target = $('rd-detail-' + btn.dataset.target);
+        var hidden = target.style.display === 'none';
+        target.style.display = hidden ? 'block' : 'none';
+        btn.textContent = hidden ? 'свернуть ▴' : 'читать подробно ▾';
+      });
+    });
+    // кнопка «развернуть всё»
+    var allBtn = document.createElement('button');
+    allBtn.type = 'button'; allBtn.className = 'btn primary';
+    allBtn.textContent = 'Развернуть всё';
+    allBtn.style.marginBottom = '14px';
+    allBtn.addEventListener('click', function(){
+      var all = readEl.querySelectorAll('.detail');
+      var anyHidden = false;
+      all.forEach(function(d){ if (d.style.display === 'none') anyHidden = true; });
+      all.forEach(function(d){ d.style.display = anyHidden ? 'block' : 'none'; });
+      readEl.querySelectorAll('.read-more').forEach(function(b){ b.textContent = anyHidden ? 'свернуть ▴' : 'читать подробно ▾'; });
+      allBtn.textContent = anyHidden ? 'Свернуть всё' : 'Развернуть всё';
+    });
+    $('reading').insertBefore(allBtn, $('reading').firstChild);
   }
 
   function renderVargas(chart){

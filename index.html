@@ -27,6 +27,14 @@
 <main>
   <!-- ============ НАТАЛ ============ -->
   <section class="panel active" id="tab-natal">
+    <div class="hero">
+      <img src="img/hero.jpg" alt="Космос">
+      <div class="overlay"></div>
+      <div class="herotext">
+        <h2>Ваша натальная карта</h2>
+        <p>Точный ведический расчёт · сидерический зодиак · аянамша Лахири</p>
+      </div>
+    </div>
     <form id="natal-form" class="card form-grid" autocomplete="off">
       <h2>Данные рождения</h2>
       <label>Имя (необязательно)
@@ -69,11 +77,12 @@
     </form>
 
     <div id="natal-result" class="hidden">
-      <div id="chart-summary"></div>
       <div class="toolbar">
-        <button type="button" id="btn-print" class="btn primary">🖨 Печать / PDF</button>
-        <button type="button" id="btn-save" class="btn">⬇ Сохранить разбор (HTML)</button>
+        <span class="hint">Сохранить разбор:</span>
+        <button type="button" id="btn-save" class="btn big">⬇ Скачать (HTML)</button>
+        <button type="button" id="btn-print" class="btn primary big">🖨 Распечатать / PDF</button>
       </div>
+      <div id="chart-summary"></div>
       <div class="card" id="chart-table-wrap"><h2>Положения планет</h2><div id="chart-table"></div></div>
       <div id="reading"></div>
       <div class="card" id="vargas-wrap"><h2>Варги (Д-9 и Д-10)</h2><div id="vargas"></div></div>
