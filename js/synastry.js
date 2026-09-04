@@ -152,9 +152,112 @@
     12:'заграничное/скрытое измерение отношений'
   }[h] || 'интригующее, будоражащее влияние на ' + h + '-й дом'; }
 
+  // Управитель знака
+  function signLord(signIdx){ return { 0:'Марс',1:'Венера',2:'Меркурий',3:'Луна',4:'Солнце',5:'Меркурий',6:'Венера',7:'Марс',8:'Юпитер',9:'Сатурн',10:'Сатурн',11:'Юпитер' }[signIdx]; }
+  // Управитель дома (whole-sign)
+  function houseLordOf(chart, house){ return signLord((chart.lagna.signIdx + house - 1) % 12); }
+
+  // ===== ДЕНЕЖНАЯ СОВМЕСТИМОСТЬ =====
+  // «Смогу ли я с этим человеком заработать много денег?»
+  function moneySynastry(chart1, chart2, name1, name2){
+    var MONEY_HOUSES = [2, 11];      // накопления и доход
+    var SUPPORT_HOUSES = [1, 5, 9, 10]; // личность, инвестиции, удача, карьера
+    var LOSS_HOUSES = [6, 8, 12];     // потери, чужие деньги, расходы
+
+    // планеты B → дома A (whole-sign)
+    function overlay(B, A){
+      var key = ['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn','Rahu','Ketu'];
+      var map = {};
+      key.forEach(function(k){
+        map[k] = { ru: B.planets[k].ru, house: (B.planets[k].signIdx - A.lagna.signIdx + 12) % 12 + 1 };
+      });
+      return map;
+    }
+
+    function analyze(B, A, nameB, nameA){
+      var ov = overlay(B, A);
+      var key = ['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn','Rahu','Ketu'];
+      var gain = [], loss = [], support = [];
+      var score = 0;
+      key.forEach(function(k){
+        var p = ov[k];
+        var h = p.house;
+        var isMoneyPlanet = (k==='Jupiter' || k==='Venus' || k==='Mercury'); // природные «денежные» планеты
+        if (MONEY_HOUSES.indexOf(h) >= 0){
+          var bonus = isMoneyPlanet ? 2 : 1;
+          score += bonus;
+          gain.push(p.ru + ' в ваш ' + h + '-й дом' + (isMoneyPlanet ? ' (денежная планета — сильный плюс)' : ''));
+        } else if (SUPPORT_HOUSES.indexOf(h) >= 0){
+          score += isMoneyPlanet ? 1 : 0;
+          support.push(p.ru + ' в ваш ' + h + '-й дом');
+        } else if (LOSS_HOUSES.indexOf(h) >= 0){
+          score -= 1;
+          loss.push(p.ru + ' в ваш ' + h + '-й дом');
+        }
+      });
+      // управители денежных домов партнёра B — куда попали к A
+      var b2 = houseLordOf(B, 2), b11 = houseLordOf(B, 11);
+      [b2, b11].forEach(function(lord){
+        var lp = null;
+        for (var kk in B.planets){ if (B.planets[kk].ru === lord) lp = B.planets[kk]; }
+        if (lp){
+          var h = (lp.signIdx - A.lagna.signIdx + 12) % 12 + 1;
+          if (MONEY_HOUSES.indexOf(h) >= 0){ score += 1; gain.push('управитель денег ' + nameB + ' (' + lord + ') — в ваш ' + h + '-й дом'); }
+          else if (LOSS_HOUSES.indexOf(h) >= 0){ score -= 1; loss.push('управитель денег ' + nameB + ' (' + lord + ') — в ваш ' + h + '-й дом'); }
+        }
+      });
+      return { gain: gain, loss: loss, support: support, score: score };
+    }
+
+    var a1 = analyze(chart2, chart1, name2, name1); // B → A
+    var a2 = analyze(chart1, chart2, name1, name2); // A → B
+    var total = a1.score + a2.score;
+
+    var items = [];
+    items.push('<p>Анализируем «денежные» дома (2-й — накопления, 11-й — доход) и то, куда попадают планеты партнёра, а также Юпитер (богатство), Венеру (деньги) и Меркурий (коммерция).</p>');
+
+    items.push('<h4>Что приносит деньги в союз</h4>');
+    var gains = a1.gain.concat(a2.gain);
+    if (gains.length){
+      items.push('<ul>' + gains.map(function(g){ return '<li>' + g + '</li>'; }).join('') + '</ul>');
+    } else {
+      items.push('<p>Ярких денежных связей между вашими картами не видно — доход в паре будет строиться на личных усилиях, а не на «химии» карт.</p>');
+    }
+
+    items.push('<h4>Что «протекает» или требует осторожности</h4>');
+    var losses = a1.loss.concat(a2.loss);
+    if (losses.length){
+      items.push('<ul>' + losses.map(function(l){ return '<li>' + l + '</li>'; }).join('') + '</ul>');
+    } else {
+      items.push('<p>Нет «дыр» — партнёрские карты не создают взаимного оттока денег.</p>');
+    }
+
+    items.push('<h4>Поддерживающие факторы</h4>');
+    var supp = a1.support.concat(a2.support);
+    if (supp.length){
+      items.push('<p>' + supp.join('; ') + ' — планеты партнёра в ваших домах роста, инвестиций, удачи и карьеры помогают совместному делу.</p>');
+    } else {
+      items.push('<p>Совместная деятельность будет строиться на усилиях, а не на удачном наложении карт.</p>');
+    }
+
+    // Вердикт
+    var verdict;
+    if (total >= 5) verdict = 'ОТЛИЧНО — сильная денежная связь. Вы способны вместе построить прибыльное дело: карты взаимно «заряжают» финансовые дома друг друга. Это союз, который хорошо монетизируется.';
+    else if (total >= 2) verdict = 'ХОРОШО — есть реальный финансовый потенциал в паре. Деньги будут, но нужен общий чёткий план и разделение ролей.';
+    else if (total >= 0) verdict = 'НЕЙТРАЛЬНО — карты не мешают и не сильно помогают деньгам. Совместный доход возможен, но станет результатом личного труда, а не «везения в паре».';
+    else verdict = 'СЛОЖНО — в картах есть «отток» денег (планеты в 6/8/12 домах). Вместе зарабатывать будет труднее: возможны споры о деньгах, долги или «протекающий» бюджет. Лучше финансовые дела вести раздельно.';
+
+    items.push('<div class="formula">💠 Итог: ' + verdict + '</div>');
+    items.push('<p><i>Балл денежной связи: ' + total + ' (чем выше, тем сильнее взаимный финансовый потенциал). Это тенденция по картам, а не финансовый прогноз — реальный доход зависит от действий.</i></p>');
+
+    return { title: 'Деньги: смогу ли я заработать с этим человеком?', items: items, score: total };
+  }
+
   // Главная функция
   function deepSynastry(chart1, chart2, name1, name2){
     var res = { sections: [] };
+    // ДЕНЕЖНАЯ СОВМЕСТИМОСТЬ (главная новая тема)
+    res.sections.push(moneySynastry(chart1, chart2, name1, name2));
     // Мангала
     var m1 = mangalAnalysis(chart1, name1);
     var m2 = mangalAnalysis(chart2, name2);
@@ -200,5 +303,5 @@
     return res;
   }
 
-  return { deepSynastry: deepSynastry, mangalAnalysis: mangalAnalysis, houseOverlay: houseOverlay };
+  return { deepSynastry: deepSynastry, mangalAnalysis: mangalAnalysis, houseOverlay: houseOverlay, moneySynastry: moneySynastry };
 }));

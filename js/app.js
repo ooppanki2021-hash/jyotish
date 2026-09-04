@@ -438,7 +438,13 @@
     var el = $('synastry-result');
     el.classList.remove('hidden');
     var html = syn.sections.map(function(s){
-      return '<div class="card reading-section"><h3>'+esc(s.title)+'</h3>' + s.items.map(function(it){ return '<p>'+it+'</p>'; }).join('') + '</div>';
+      var body = s.items.map(function(it){
+        // если пункт уже содержит блочные теги (h4, ul, div, p) — вставляем как есть
+        var t = it.trim();
+        if (/^<(h4|ul|div|p|table|li)\b/i.test(t)) return it;
+        return '<p>' + it + '</p>';
+      }).join('');
+      return '<div class="card reading-section"><h3>'+esc(s.title)+'</h3>' + body + '</div>';
     }).join('');
     el.innerHTML = html;
   }

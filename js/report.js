@@ -166,7 +166,11 @@
     if (synastry && synastry.sections){
       synastry.sections.forEach(function(s){
         block += '<h3>'+esc(s.title)+'</h3>';
-        s.items.forEach(function(it){ block += '<p>'+it+'</p>'; });
+        s.items.forEach(function(it){
+          var t = (it || '').trim();
+          if (/^<(h4|ul|div|p|table|li)\b/i.test(t)) block += it;
+          else block += '<p>'+it+'</p>';
+        });
       });
     }
     base = base.replace('</body></html>', block + '</body></html>');
