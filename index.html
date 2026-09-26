@@ -9,17 +9,21 @@
 <body>
 <header class="top">
   <div class="brand">
-    <div class="om">ॐ</div>
+    <button type="button" class="om" id="om-menu" aria-label="Открыть меню" aria-expanded="false">ॐ</button>
     <div>
       <h1>Джйотиш</h1>
       <p class="sub">ведическая астрология · точный расчёт · личный астролог</p>
     </div>
   </div>
   <nav class="tabs" id="tabs">
-    <button class="tab active" data-tab="natal">Карта и чтение</button>
-    <button class="tab" data-tab="predict">Прогностика</button>
-    <button class="tab" data-tab="compat">Совместимость</button>
-    <button class="tab" data-tab="muhurta">Мухурта</button>
+    <button type="button" id="theme-toggle" class="tab theme-toggle" aria-label="Переключить тему">🌙 Тёмная тема</button>
+    <button class="tab active" data-tab="natal">Кто я, мой путь</button>
+    <button class="tab" data-tab="predict">Прогноз по дням</button>
+    <button class="tab" data-tab="causal">🕯️ Кармический разбор</button>
+    <button class="tab" data-tab="natal-sak">📖 Натальная карта (Сакойян)</button>
+    <button class="tab" data-tab="prof">💼 Профессия и бизнес (Дараган)</button>
+    <button class="tab" data-tab="daragan-ask">📚 Спросить Дарагана</button>
+    <button class="tab" data-tab="compat">Совместимости</button>
     <button class="tab" data-tab="chat">Спросить астролога</button>
   </nav>
 </header>
@@ -37,42 +41,42 @@
     </div>
     <form id="natal-form" class="card form-grid" autocomplete="off">
       <h2>Данные рождения</h2>
+      <div class="saved-row">
+        <label class="saved-label">Сохранённые карты
+          <select id="f-saved"><option value="">— подставить сохранённую —</option></select>
+        </label>
+        <button type="button" id="f-saved-del" class="btn small">✕ Удалить выбранную</button>
+      </div>
       <label>Имя (необязательно)
         <input type="text" id="f-name" placeholder="Например: Анна">
       </label>
       <label>Дата рождения
-        <input type="date" id="f-date" value="1984-04-27">
+        <input type="date" id="f-date" value="1990-06-15">
       </label>
       <label>Время рождения
-        <input type="time" id="f-time" value="00:40">
+        <input type="time" id="f-time" value="12:00">
       </label>
-      <label>Город
-        <select id="f-city">
-          <option value="custom">— другой город —</option>
-          <option value="vladikavkaz" selected>Владикавказ</option>
-          <option value="moscow">Москва</option>
-          <option value="spb">Санкт-Петербург</option>
-          <option value="ekb">Екатеринбург</option>
-          <option value="nsk">Новосибирск</option>
-          <option value="vladivostok">Владивосток</option>
-          <option value="minsk">Минск</option>
-          <option value="kiev">Киев</option>
-          <option value="almaty">Алматы</option>
-          <option value="tashkent">Ташкент</option>
-        </select>
+      <label>Город рождения
+        <input type="text" id="f-city" placeholder="Начните вводить: Москва, London, Delhi…">
+        <small id="f-city-note">Все города мира (~34 000): координаты и часовой пояс подставятся автоматически. Маленького населённого пункта нет в базе — введите координаты вручную ниже.</small>
       </label>
       <label>Широта (°, +север)
-        <input type="number" id="f-lat" step="any" value="43.02">
+        <input type="number" id="f-lat" step="any" value="55.75">
       </label>
       <label>Долгота (°, +восток)
-        <input type="number" id="f-lon" step="any" value="44.68">
+        <input type="number" id="f-lon" step="any" value="37.62">
       </label>
       <label>Часовой пояс (UTC, восток = +)
-        <input type="number" id="f-tz" step="0.5" value="4">
-        <small>Если родились летом и был перевод часов — скорректируйте вручную. Пример: Владикавказ летом 1984 = +4, зимой = +3.</small>
+        <input type="number" id="f-tz" step="0.25" value="3">
+        <small id="f-tz-note">При выборе города пояс определяется автоматически — включая летнее время и исторические переводы часов на дату рождения. Можно поправить вручную.</small>
       </label>
       <div class="form-actions">
         <button type="submit" class="btn primary">Рассчитать карту</button>
+        <button type="button" id="btn-save-chart" class="btn">💾 Сохранить карту</button>
+        <button type="button" id="btn-export-charts" class="btn">⬇ Экспорт карт</button>
+        <button type="button" id="btn-import-charts" class="btn">⬆ Импорт карт</button>
+        <input type="file" id="charts-file" accept=".json,application/json" hidden>
+        <span id="save-chart-status" class="muted"></span>
       </div>
     </form>
 
@@ -91,13 +95,138 @@
 
   <!-- ============ ПРОГНОСТИКА ============ -->
   <section class="panel" id="tab-predict">
-    <div id="predict-empty" class="card">Сначала рассчитайте карту на вкладке «Карта и чтение».</div>
-    <div id="predict-result" class="hidden">
-      <div class="card"><h2>Текущий период (Вишоттари-даша)</h2><div id="dasha-current"></div></div>
-      <div class="card"><h2>Махадаши (главные периоды жизни)</h2><div id="dasha-table"></div></div>
-      <div class="card"><h2>Транзиты сейчас</h2><div id="transits"></div></div>
-      <div class="card"><h2>Годовой прогноз (варшапхал)</h2><div id="varshaphal"></div></div>
+    <div class="card expl-card" id="predict-explain">
+      <h2>❓ Что здесь и зачем</h2>
+      <div class="expl-grid">
+        <div class="ex"><b>📖 Прогноз по дням (рассказ о периоде)</b> — <u>личный</u> прогноз, построенный от вашей карты рождения: какие периоды жизни идут сейчас, где сейчас Сатурн, Юпитер, Раху и Кету относительно вашей карты, каким будет год. Отвечает на вопросы «что сейчас возможно именно у меня, что нельзя, чем заниматься».</div>
+        <div class="ex"><b>🗓️ Мухурта (внизу, после плана действий)</b> — <u>общий</u> календарь благоприятных моментов, одинаковый для всех людей: лунные сутки, накшатра, день недели. Он не видит вашу карту и отвечает только на вопрос «когда лучше стартовать конкретное дело».</div>
+        <div class="ex"><b>⚖️ Если они расходятся:</b> «Прогноз по дням» решает, возможно ли это у вас в принципе, а Мухурта лишь выбирает момент внутри разрешённого. Даже самое «удачное» окно не даст урожая не в сезон — поэтому при расхождении слушайте Прогностику.</div>
+      </div>
     </div>
+    <div id="predict-empty" class="card">Сначала рассчитайте карту на вкладке «Кто я, мой путь».</div>
+    <div id="predict-result" class="hidden">
+      <div id="forecast-story"></div>
+
+      <!-- Мухурта (переехала сюда из отдельной вкладки) -->
+      <div class="card" id="muhurta-card">
+        <h2>🗓️ Мухурта: подбор благоприятного момента</h2>
+        <p class="muted">Общий календарь удачных дат и часов по панчанге: титхи (лунный день), день недели, накшатра; исключаются Раху-кала, Ямаганда и Гулика. <b>Важно:</b> мухурта одинакова для всех и не знает вашу карту — если «Прогноз по дням» выше говорит «сейчас это делать нельзя», слушайте прогноз.</p>
+        <div class="form-grid">
+          <label>Город
+            <input type="text" id="m-city" placeholder="Начните вводить город…">
+            <small>Координаты и часовой пояс подставятся автоматически (по умолчанию — из вашей карты).</small>
+          </label>
+          <label>Широта (°, +север)
+            <input type="number" id="m-lat" step="any" value="55.75">
+          </label>
+          <label>Долгота (°, +восток)
+            <input type="number" id="m-lon" step="any" value="37.62">
+          </label>
+          <label>Часовой пояс (UTC, восток = +)
+            <input type="number" id="m-tz" step="0.25" value="3">
+          </label>
+          <label>Что планируете
+            <select id="m-activity">
+              <option value="general">Важное дело / встреча</option>
+              <option value="business">Начало бизнеса / дела</option>
+              <option value="marriage">Брак / помолвка</option>
+              <option value="property">Недвижимость / новоселье</option>
+              <option value="travel">Путешествие / поездка</option>
+              <option value="education">Начало обучения</option>
+              <option value="finance">Финансовые операции</option>
+              <option value="health">Медицинская процедура</option>
+            </select>
+          </label>
+          <label>Сколько ближайших дат показать
+            <input type="number" id="m-count" min="1" max="10" value="3">
+            <small>Поиск идёт вперёд до 400 дней, пока не найдётся нужное число дат с окнами.</small>
+          </label>
+          <div class="form-actions">
+            <button type="button" id="m-go" class="btn primary">Найти благоприятное время</button>
+          </div>
+        </div>
+      </div>
+      <div class="card" id="m-panchanga"><h2>Панчанга на сегодня</h2><div id="m-panchanga-body" class="muted">Нажмите «Найти благоприятное время» — расчёт появится здесь.</div></div>
+      <div id="m-result" class="hidden"></div>
+
+      <details class="fs-tech">
+        <summary>🔍 Технические детали: таблицы периодов, транзитов и годового расчёта</summary>
+        <div class="card"><h2>Текущий период (Вишоттари-даша)</h2><div id="dasha-current"></div></div>
+        <div class="card"><h2>Махадаши (главные периоды жизни)</h2><div id="dasha-table"></div></div>
+        <div class="card"><h2>Транзиты сейчас</h2><div id="transits"></div></div>
+        <div class="card"><h2>Годовой прогноз (варшапхал)</h2><div id="varshaphal"></div></div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ ПРИЧИННЫЕ АСПЕКТЫ (КАРМИЧЕСКИЙ РАЗБОР) ============ -->
+  <section class="panel" id="tab-causal">
+    <div class="card expl-card">
+      <h2>🕯️ Что это за разбор</h2>
+      <div class="expl-grid">
+        <div class="ex"><b>Что покажет.</b> Не прогноз «когда», а чтение <u>программы</u>: где в вашей карте <b>напряжение</b> (то, что надо отработать), где <b>защита</b> (на что можно опереться), где <b>творческий дар</b>, где <b>кармический груз</b>, куда ведут <b>лунные узлы</b> и какая сфера сейчас самая «заряженная».</div>
+        <div class="ex"><b>По какой книге.</b> Е. А. Орлова, «Причинные аспекты астрологии» — метод, где аспекты окрашены по смыслу: 🔴 напряжённые, 🟢 гармоничные, 🟣 творческие, 🔵 кармические.</div>
+        <div class="ex"><b>Важно.</b> Это не приговор и не «судьба». По самой книге главное — вы свободны: разбор показывает, <u>где</u> и <u>что</u> осознать, а как жить — решаете вы.</div>
+      </div>
+    </div>
+    <div id="causal-empty" class="card">
+      Сначала рассчитайте карту на вкладке «Кто я, мой путь». Затем нажмите кнопку ниже — разбор появится здесь.
+      <div style="margin-top:10px"><button type="button" id="btn-causal" class="btn primary">🕯️ Построить кармический разбор</button></div>
+    </div>
+    <div id="causal-result" class="hidden"></div>
+  </section>
+
+  <!-- ============ НАТАЛЬНАЯ КАРТА ПО САКОЙЯН-ЭККЕР ============ -->
+  <section class="panel" id="tab-natal-sak">
+    <div class="card expl-card">
+      <h2>📖 Что это за разбор</h2>
+      <div class="expl-grid">
+        <div class="ex"><b>Что покажет.</b> Подробное чтение вашей карты рождения <u>их словами</u> (по «Справочнику астролога. Том I. Натальная карта» Ф. Сакояна и Л. Эккера): Солнце в знаке, Асцендент и 12 домов, планеты в знаках и домах, управители и возвышения, ваши аспекты.</div>
+        <div class="ex"><b>Чем отличается.</b> Это не прогноз «когда», а <u>характеристика</u>: качества, сильные стороны и зоны роста. Тома II (транзиты) и III (синастрия) уже в приложении — это первый, «фундаментный» том.</div>
+        <div class="ex"><b>Важно.</b> Строится по карте с вкладки «Кто я, мой путь» и не заменяет основной разбор.</div>
+      </div>
+    </div>
+    <div id="natal-sak-empty" class="card">
+      Сначала рассчитайте карту на вкладке «Кто я, мой путь». Затем нажмите кнопку ниже — толкование появится здесь.
+      <div style="margin-top:10px"><button type="button" id="btn-natal-sak" class="btn primary">📖 Построить толкование натальной карты</button></div>
+    </div>
+    <div id="natal-sak-result" class="hidden"></div>
+  </section>
+
+  <!-- ============ ПРОФЕССИЯ И БИЗНЕС ПО ДАРАГАНУ ============ -->
+  <section class="panel" id="tab-prof">
+    <div class="card expl-card">
+      <h2>💼 Что это за разбор</h2>
+      <div class="expl-grid">
+        <div class="ex"><b>Что покажет.</b> Оценку ваших способностей к <u>делу и деньгам</u> по книге К. Дарагана «Профессиональная астрология. Астрологическое консультирование и сопровождение бизнеса» (Мир Урании, 2019): сильнейшая планета-«сигнификатор дела» и её бизнес, деловой смысл ключевых домов, «сигнатуры предпринимателя» (по Л. Родцен) и денежный потенциал по II дому.</div>
+        <div class="ex"><b>Чем отличается.</b> Это <u>не</u> «Прогноз по Дарагану» (тот — о событиях во времени). Здесь — чтение склонности к своему делу, профессии и деньгам: где ваша зона силы и где зона работы.</div>
+        <div class="ex"><b>Важно.</b> Строится по карте с вкладки «Кто я, мой путь» и не заменяет основной разбор.</div>
+      </div>
+    </div>
+    <div id="prof-empty" class="card">
+      Сначала рассчитайте карту на вкладке «Кто я, мой путь». Затем нажмите кнопку ниже — разбор появится здесь.
+      <div style="margin-top:10px"><button type="button" id="btn-prof" class="btn primary">💼 Предприниматель и профессия (Дараган)</button></div>
+    </div>
+    <div id="prof-result" class="hidden"></div>
+  </section>
+
+  <!-- ============ СПРОСИТЬ ДАРАГАНА (поиск по книге) ============ -->
+  <section class="panel" id="tab-daragan-ask">
+    <div class="card expl-card">
+      <h2>📚 Что это</h2>
+      <div class="expl-grid">
+        <div class="ex"><b>Как работает.</b> Вы задаёте вопрос про астрологию дела/денег/профессии — а отвечает <u>сама книга</u>: модуль ищет по ней релевантные места и показывает <u>выдержки как есть</u>, не ломая контекст и не переписывая.</div>
+        <div class="ex"><b>Ответ.</b> Вверху — короткая цитата-ответ (сильнейшая фраза из книги), ниже — ещё несколько фрагментов по релевантности, с подсветкой найденных слов. Можете раскрыть/свернуть каждый.</div>
+        <div class="ex"><b>Оффлайн.</b> Весь текст книги встроен в приложение — интернет не нужен. Это поиск-выдержки, а не синтез: судите по контексту.</div>
+      </div>
+    </div>
+    <div class="card">
+      <label>Ваш вопрос по книге Дарагана
+        <input type="text" id="ask-input" placeholder="Например: чем управляет Меркурий, богатство по 2 дому, как определить сигнификатор профессии…">
+      </label>
+      <div style="margin-top:8px"><button type="button" id="btn-ask" class="btn primary">📚 Спросить</button></div>
+    </div>
+    <div id="daragan-ask-result" class="hidden" style="margin-top:10px"></div>
   </section>
 
   <!-- ============ СОВМЕСТИМОСТЬ ============ -->
@@ -105,69 +234,52 @@
     <div class="two-col">
       <form id="compat1" class="card form-grid compact">
         <h2>Партнёр 1</h2>
+        <label class="saved-label">Из сохранённых карт
+          <select class="c-saved"><option value="">— подставить карту —</option></select>
+        </label>
         <label>Имя <input type="text" class="c-name" placeholder="Имя"></label>
-        <label>Дата <input type="date" class="c-date" value="1984-04-27"></label>
-        <label>Время <input type="time" class="c-time" value="00:40"></label>
-        <label>Широта <input type="number" class="c-lat" step="any" value="43.02"></label>
-        <label>Долгота <input type="number" class="c-lon" step="any" value="44.68"></label>
-        <label>Пояс UTC <input type="number" class="c-tz" step="0.5" value="4"></label>
+        <label>Дата <input type="date" class="c-date" value="1990-06-15"></label>
+        <label>Время <input type="time" class="c-time" value="12:00"></label>
+        <label>Город <input type="text" class="c-city" placeholder="Начните вводить город…"></label>
+        <label>Широта <input type="number" class="c-lat" step="any" value="55.75"></label>
+        <label>Долгота <input type="number" class="c-lon" step="any" value="37.62"></label>
+        <label>Пояс UTC <input type="number" class="c-tz" step="0.25" value="4"></label>
       </form>
       <form id="compat2" class="card form-grid compact">
         <h2>Партнёр 2</h2>
+        <label class="saved-label">Из сохранённых карт
+          <select class="c-saved"><option value="">— подставить карту —</option></select>
+        </label>
         <label>Имя <input type="text" class="c-name" placeholder="Имя"></label>
-        <label>Дата <input type="date" class="c-date" value="1979-09-10"></label>
-        <label>Время <input type="time" class="c-time" value="06:00"></label>
-        <label>Широта <input type="number" class="c-lat" step="any" value="43.02"></label>
-        <label>Долгота <input type="number" class="c-lon" step="any" value="44.68"></label>
-        <label>Пояс UTC <input type="number" class="c-tz" step="0.5" value="3"></label>
+        <label>Дата <input type="date" class="c-date" value="1992-02-10"></label>
+        <label>Время <input type="time" class="c-time" value="18:30"></label>
+        <label>Город <input type="text" class="c-city" placeholder="Начните вводить город…"></label>
+        <label>Широта <input type="number" class="c-lat" step="any" value="55.75"></label>
+        <label>Долгота <input type="number" class="c-lon" step="any" value="37.62"></label>
+        <label>Пояс UTC <input type="number" class="c-tz" step="0.25" value="3"></label>
       </form>
     </div>
     <div class="form-actions center">
       <button type="button" id="compat-btn" class="btn primary">Рассчитать совместимость</button>
+      <button type="button" id="btn-sakoyan-syn" class="btn">💞 Синастрия по Сакойян-Фенсис-Эккер-Луис</button>
     </div>
+    <p class="muted center" style="margin:6px 0 0;text-align:center">Кнопка «Синастрия по Сакойян…» — отдельный западный расчёт пары по книге Ф. Сакоян и Л. Эккер (Том III, «Астрология взаимоотношений»): сравнительные аспекты, планеты Партнёра в домах второй карты, диспозиторы и стихии. Использует те же два поля партнёров, но считается независимо от основной совместимости.</p>
+    <div class="card" id="rank-card" style="margin-top:16px">
+      <h2>🏆 Кто мне подходит больше</h2>
+      <p class="muted">Сначала заполните «Партнёр 1» — это ваша карта. Затем выберите несколько сохранённых карт партнёров и сравните их между собой.</p>
+      <label>Кого сравнить (можно выбрать несколько)
+        <select id="rank-saved" multiple size="4" style="width:100%;min-height:92px"><option>Нет сохранённых карт</option></select>
+      </label>
+      <div class="form-actions"><button type="button" id="rank-btn" class="btn primary">Сравнить выбранных партнёров</button></div>
+      <div id="rank-result" class="hidden"></div>
+    </div>
+    <div id="compat-story" class="hidden"></div>
     <div id="compat-result" class="hidden"></div>
     <div id="synastry-result" class="hidden"></div>
+    <div id="sakoyan-syn-result" class="hidden"></div>
+    <div id="sakoyan-syn-saved" class="hidden"></div>
   </section>
 
-
-  <!-- ============ МУХУРТА ============ -->
-  <section class="panel" id="tab-muhurta">
-    <div class="card">
-      <h2>Выбор благоприятного времени (мухурта)</h2>
-      <p class="muted">Подбор удачных дат и часов для важных дел по панчанге: титхи (лунный день), вара (день недели), накшатра, а также исключение Раху-калы, Ямаганды и Гулики. Показываются <b>ближайшие благоприятные даты</b> — даже если до них несколько месяцев.</p>
-      <div class="form-grid">
-        <label>Широта (°, +север)
-          <input type="number" id="m-lat" step="any" value="43.02">
-        </label>
-        <label>Долгота (°, +восток)
-          <input type="number" id="m-lon" step="any" value="44.68">
-        </label>
-        <label>Часовой пояс (UTC, восток = +)
-          <input type="number" id="m-tz" step="0.5" value="3">
-        </label>
-        <label>Что планируете
-          <select id="m-activity">
-            <option value="general">Важное дело / встреча</option>
-            <option value="business">Начало бизнеса / дела</option>
-            <option value="marriage">Брак / помолвка</option>
-            <option value="property">Недвижимость / новоселье</option>
-            <option value="travel">Путешествие / поездка</option>
-            <option value="education">Начало обучения</option>
-            <option value="finance">Финансовые операции</option>
-            <option value="health">Медицинская процедура</option>
-          </select>
-        </label>
-        <label>Сколько дат показать
-          <input type="number" id="m-count" min="1" max="10" value="3">
-        </label>
-        <div class="form-actions">
-          <button type="button" id="m-go" class="btn primary">Найти благоприятное время</button>
-        </div>
-      </div>
-    </div>
-    <div class="card" id="m-panchanga"><h2>Панчанга на сегодня</h2><div id="m-panchanga-body" class="muted">Нажмите «Найти…» или «Панчанга» — расчёт появится здесь.</div></div>
-    <div id="m-result" class="hidden"></div>
-  </section>
 
   <!-- ============ ЧАТ ============ -->
   <section class="panel" id="tab-chat">
@@ -177,6 +289,7 @@
       <div class="form-grid">
         <label>Провайдер
           <select id="s-provider">
+            <option value="local" selected>🧿 Встроенный астролог (офлайн, без ключа)</option>
             <option value="cloudflare">Cloudflare (бесплатно, проще всего) ⭐</option>
             <option value="gigachat">GigaChat (Сбер, бесплатно)</option>
             <option value="deepseek">DeepSeek (нужен баланс)</option>
@@ -217,18 +330,36 @@
 
 <footer class="foot">
   <p>Джйотиш — традиционная система самопознания и духовной ориентации, а не точная наука. Сведения не являются медицинским, юридическим или финансовым советом. Расчёт: сидерический зодиак, аянамша Лахири, эфемериды Astronomy Engine (MIT).</p>
-  <p class="ver">версия сайта: v1.9 (денежная синастрия)</p>
+  <p class="ver">версия сайта: v1.13</p>
 </footer>
 
 <script src="js/astronomy.min.js"></script>
+<script src="js/cities.js"></script>
+<script src="js/citysearch.js"></script>
 <script src="js/jyotish.js"></script>
+<script src="js/interactions.js"></script>
+<script src="js/destiny.js"></script>
+<script src="js/reading-content.js"></script>
 <script src="js/reading.js"></script>
 <script src="js/compat.js"></script>
 <script src="js/synastry.js"></script>
+<script src="js/compat-story.js"></script>
 <script src="js/report.js"></script>
 <script src="js/muhurta.js"></script>
 <script src="js/varshaphal.js"></script>
 <script src="js/chat.js"></script>
+<script src="js/lifemap.js"></script>
+<script src="js/forecast-story.js"></script>
+<script src="js/daragan.js"></script>
+<script src="js/sakoyan.js"></script>
+<script src="js/sakoyan-synastry.js"></script>
+<script src="js/sakoyan-natal.js"></script>
+<script src="js/daragan-prof.js"></script>
+<script src="js/daragan-book.js"></script>
+<script src="js/daragan-ask.js"></script>
+<script src="js/causal.js"></script>
+<script src="js/ai-local.js"></script>
+<script src="tools/app-bridge.js"></script>
 <script src="js/app.js"></script>
 <iframe id="print-frame" title="print" style="display:none"></iframe>
 </body>

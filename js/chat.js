@@ -20,6 +20,12 @@
 
   // Провайдеры
   var PROVIDERS = {
+    local: {
+      label: '🧿 Встроенный астролог (офлайн, без ключа)',
+      defaultModel: 'встроенная база знаний',
+      defaultBaseUrl: '',
+      keyHint: 'Ключ не нужен — ассистент отвечает на устройстве по встроенной базе интерпретаций.'
+    },
     gemini: {
       label: 'Google Gemini',
       defaultModel: 'gemini-2.5-flash',
@@ -67,8 +73,8 @@
   function getConfig(){
     var s = {};
     try { s.key = localStorage.getItem(KEY_STORAGE) || ''; } catch(e){ s.key = ''; }
-    try { s.provider = localStorage.getItem(PROVIDER_STORAGE) || 'deepseek'; } catch(e){ s.provider = 'deepseek'; }
-    var prov = PROVIDERS[s.provider] || PROVIDERS.deepseek;
+    try { s.provider = localStorage.getItem(PROVIDER_STORAGE) || 'local'; } catch(e){ s.provider = 'local'; }
+    var prov = PROVIDERS[s.provider] || PROVIDERS.local;
     try { s.model = localStorage.getItem(MODEL_STORAGE) || prov.defaultModel; } catch(e){ s.model = prov.defaultModel; }
     try { s.baseUrl = localStorage.getItem(BASEURL_STORAGE) || prov.defaultBaseUrl; } catch(e){ s.baseUrl = prov.defaultBaseUrl; }
     return s;
@@ -185,6 +191,13 @@
 
   async function send(message, history, chart, personName){
     var cfg = getConfig();
+    // Встроенный офлайн-ассистент: без ключей и сети
+    if (cfg.provider === 'local'){
+      var AL = (typeof window !== 'undefined' && window.AiLocal) || (typeof self !== 'undefined' && self.AiLocal) || null;
+      if (!AL) throw new Error('LOCAL_NA');
+      if (!chart) throw new Error('NO_CHART');
+      return Promise.resolve().then(function(){ return AL.answer(message, chart, personName); });
+    }
     // GigaChat и Cloudflare работают через Worker — ключ не нужен
     if (cfg.provider !== 'gigachat' && cfg.provider !== 'cloudflare' && !cfg.key) throw new Error('NO_KEY');
     // АВТО-МАРШРУТИЗАЦИЯ: если ключ не подходит к выбранному провайдеру — переключаем сами

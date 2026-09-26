@@ -338,8 +338,8 @@
   }
 
   // Транзиты на текущий момент (Сатурн, Юпитер, Раху, Кету)
-  function transits(){
-    var now = new Date();
+  function transits(at){
+    var now = at || new Date();
     var t = A.MakeTime(now);
     var jd = now.getTime()/86400000 + 2440587.5;
     function sid(body){ return sidereal(tropicalLon(body, t), jd); }
@@ -355,6 +355,7 @@
     return {
       Saturn: pl(sid(A.Body.Saturn)),
       Jupiter: pl(sid(A.Body.Jupiter)),
+      Moon: pl(sid(A.Body.Moon)),
       Rahu: pl(n.rahu),
       Ketu: pl(n.ketu)
     };

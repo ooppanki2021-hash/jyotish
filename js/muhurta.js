@@ -120,14 +120,17 @@
     return null;
   }
 
-  // Расчёт окон одного локального дня (y,m,d — локальные)
-  function dayInfo(y, m, d, lat, lon, tz, act, stepMin){
-    stepMin = stepMin || 30;
-    var rs = sunriseSunsetUTC(y, m, d, lat, lon, tz);
+  // Один день (смещение off суток от сегодня) — окна от восхода до захода.
+  function computeDay(lat, lon, tz, act, stepMin, off){
+    var now = new Date();
+    var local = new Date(now.getTime() + tz*3600000);
+    var y = local.getUTCFullYear(), m = local.getUTCMonth()+1, dd = local.getUTCDate();
+    var dayLocal = new Date(Date.UTC(y, m-1, dd) + off*86400000);
+    var dy = dayLocal.getUTCFullYear(), dm = dayLocal.getUTCMonth()+1, dday = dayLocal.getUTCDate();
+    var rs = sunriseSunsetUTC(dy, dm, dday, lat, lon, tz);
     if (!rs.sunrise || !rs.sunset) return null;
-    var vara = new Date(Date.UTC(y, m-1, d)).getUTCDay();
+    var vara = dayLocal.getUTCDay();
     var kalas = buildKalas(rs.sunrise, rs.sunset, vara);
-
     var windows = [];
     var cur = null;
     var t = rs.sunrise.getTime();
@@ -147,13 +150,10 @@
       t += stepMin*60000;
     }
     if (cur) windows.push(cur);
-    // хвост последнего окна дотягиваем до захода
-    windows.forEach(function(w){ if (w.end < rs.sunset.getTime() && w.end > w.start) w.end = Math.min(w.end + stepMin*60000, rs.sunset.getTime()); });
-
     var tiDay = tithiAt(rs.sunrise);
     return {
-      date: new Date(Date.UTC(y, m-1, d)),
-      y: y, m: m, d: d,
+      date: new Date(Date.UTC(dy, dm-1, dday)),
+      y: dy, m: dm, d: dday,
       vara: vara, varaName: VARAS[vara],
       tithi: tiDay.name + ' (' + tiDay.paksha + ')',
       nakshatra: NAK[nakshatraAt(rs.sunrise)],
@@ -162,40 +162,72 @@
     };
   }
 
-  // Поиск благоприятных окон на `days` дней вперёд
-  function findMuhurta(lat, lon, tz, activityKey, days, stepMin){
-    var act = ACTIVITIES[activityKey] || ACTIVITIES.general;
-    var now = new Date();
-    var result = { activity: act.label, days: [] };
-    for (var d = 0; d < days; d++){
-      var local = new Date(now.getTime() + tz*3600000);
-      var dayLocal = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate()) + d*86400000);
-      var info = dayInfo(dayLocal.getUTCFullYear(), dayLocal.getUTCMonth()+1, dayLocal.getUTCDate(), lat, lon, tz, act, stepMin);
-      if (info) result.days.push(info);
-    }
-    return result;
-  }
-
-  // Ближайшие `count` благоприятных ДАТ (хоть через несколько месяцев):
-  // сканируем до `maxDays` дней вперёд, берём дни, где есть хотя бы одно окно.
+  // Ближайшие `count` благоприятных ДАТ (горизонт до maxDays суток).
   function findNextMuhurta(lat, lon, tz, activityKey, count, maxDays, stepMin){
     var act = ACTIVITIES[activityKey] || ACTIVITIES.general;
     count = count || 3; maxDays = maxDays || 400; stepMin = stepMin || 30;
-    var now = Date.now();
-    var local0 = new Date(now + tz*3600000);
-    var base = Date.UTC(local0.getUTCFullYear(), local0.getUTCMonth(), local0.getUTCDate());
-    var result = { activity: act.label, days: [], scanned: 0 };
-    for (var d = 0; d < maxDays && result.days.length < count; d++){
-      var day = new Date(base + d*86400000);
-      var info = dayInfo(day.getUTCFullYear(), day.getUTCMonth()+1, day.getUTCDate(), lat, lon, tz, act, stepMin);
-      result.scanned = d + 1;
-      if (!info) continue;
-      info.windows = info.windows.filter(function(w){ return w.end > now; });
-      if (!info.windows.length) continue;
-      info.best = info.windows.reduce(function(a, w){ return w.score > a.score ? w : a; }, info.windows[0]);
-      info.totalMin = info.windows.reduce(function(a, w){ return a + (w.end - w.start)/60000; }, 0);
-      info.daysUntil = d;
-      result.days.push(info);
+    var days = [];
+    for (var off = 0; off < maxDays && days.length < count; off++){
+      var day = computeDay(lat, lon, tz, act, stepMin, off);
+      if (!day) continue;
+      day.offset = off;
+      if (day.windows.length) days.push(day);
+    }
+    return { activity: act.label, days: days, count: count, maxDays: maxDays };
+  }
+
+  // Поиск благоприятных окон на `days` дней вперёд (всё в UTC ms; tz для разбиения дней)
+  function findMuhurta(lat, lon, tz, activityKey, days, stepMin){
+    var act = ACTIVITIES[activityKey] || ACTIVITIES.general;
+    stepMin = stepMin || 30;
+    var now = new Date();
+    var result = { activity: act.label, days: [] };
+
+    for (var d = 0; d < days; d++){
+      var local = new Date(now.getTime() + tz*3600000);
+      var y = local.getUTCFullYear(), m = local.getUTCMonth()+1, dd = local.getUTCDate();
+      var dayLocal = new Date(Date.UTC(y, m-1, dd) + d*86400000);
+      var dy = dayLocal.getUTCFullYear(), dm = dayLocal.getUTCMonth()+1, dday = dayLocal.getUTCDate();
+
+      var rs = sunriseSunsetUTC(dy, dm, dday, lat, lon, tz);
+      if (!rs.sunrise || !rs.sunset){ continue; }
+      var vara = dday; // placeholder, вычисляем ниже из локальной даты
+      // день недели локальный
+      vara = (dayLocal.getUTCDay()); // день недели в UTC == локальный (сдвиг на целые сутки)
+
+      var kalas = buildKalas(rs.sunrise, rs.sunset, vara);
+
+      var windows = [];
+      var cur = null;
+      var t = rs.sunrise.getTime();
+      var end = rs.sunset.getTime();
+      while (t < end){
+        var dt = new Date(t);
+        var kala = inKala(t, kalas);
+        if (!kala){
+          var ti = tithiAt(dt);
+          var nk = nakshatraAt(dt);
+          var sc = scoreMoment(ti.num, vara, nk, act);
+          if (sc.score >= 3){
+            if (!cur) cur = { start: t, end: t, score: sc.score, reasons: sc.reasons.slice(), tithi: ti.name, nak: NAK[nk] };
+            else { cur.end = t; if (sc.score > cur.score){ cur.score = sc.score; cur.reasons = sc.reasons.slice(); cur.tithi = ti.name; cur.nak = NAK[nk]; } }
+          } else if (cur){ windows.push(cur); cur = null; }
+        } else if (cur){ windows.push(cur); cur = null; }
+        t += stepMin*60000;
+      }
+      if (cur) windows.push(cur);
+
+      // итог дня
+      var tiDay = tithiAt(rs.sunrise);
+      result.days.push({
+        date: new Date(Date.UTC(dy, dm-1, dday)),
+        y: dy, m: dm, d: dday,
+        vara: vara, varaName: VARAS[vara],
+        tithi: tiDay.name + ' (' + tiDay.paksha + ')',
+        nakshatra: NAK[nakshatraAt(rs.sunrise)],
+        windows: windows,
+        sunrise: rs.sunrise, sunset: rs.sunset, kalas: kalas
+      });
     }
     return result;
   }
@@ -204,7 +236,6 @@
     panchangaNow: panchangaNow,
     findMuhurta: findMuhurta,
     findNextMuhurta: findNextMuhurta,
-    dayInfo: dayInfo,
     ACTIVITIES: ACTIVITIES,
     NAK: NAK, TITHI_NAME: TITHI_NAME, VARAS: VARAS
   };

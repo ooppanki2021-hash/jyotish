@@ -11,6 +11,23 @@
 }(typeof self !== 'undefined' ? self : this, function (J) {
 
   var SIGNS = J.SIGNS;
+  // Модуль взаимодействий планет (соединения, оппозиции, йоги, итог)
+  var IA = null;
+  try {
+    if (typeof module === 'object' && module.exports) IA = require('./interactions.js');
+    else if (typeof window !== 'undefined' && window.Interactions) IA = window.Interactions;
+    else if (typeof self !== 'undefined' && self.Interactions) IA = self.Interactions;
+  } catch (e) { IA = null; }
+  // Модуль предназначения (кармические задачи, долги, план действий)
+  var DS = null;
+  try {
+    if (typeof module === 'object' && module.exports) DS = require('./destiny.js');
+    else if (typeof window !== 'undefined' && window.Destiny) DS = window.Destiny;
+    else if (typeof self !== 'undefined' && self.Destiny) DS = self.Destiny;
+  } catch (e) { DS = null; }
+  // Расширенный контент интерпретаций (js/reading-content.js)
+  var RC = (typeof window !== 'undefined' && window.ReadingContent) ||
+           (typeof self !== 'undefined' && self.ReadingContent) || {};
   var LAGNA_LORD = { 0:'Марс',1:'Венера',2:'Меркурий',3:'Луна',4:'Солнце',5:'Меркурий',6:'Венера',7:'Марс',8:'Юпитер',9:'Сатурн',10:'Сатурн',11:'Юпитер' };
   var SIGN_NUM = { 'Овен':0,'Телец':1,'Близнецы':2,'Рак':3,'Лев':4,'Дева':5,'Весы':6,'Скорпион':7,'Стрелец':8,'Козерог':9,'Водолей':10,'Рыбы':11 };
 
@@ -28,6 +45,12 @@
     'Водолей': { el:'воздух', q:'фиксированный', gen:'мужской', dosha:'Ватта', key:'свобода, прогресс, нестандартность', text:'Независимый, прогрессивный, гуманитарный ум. Нестандартное мышление, любовь к свободе, идеям и всему новому. Эмоциональная отстранённость, упрямство в принципах.' },
     'Рыбы': { el:'вода', q:'двойной', gen:'женский', dosha:'Капха', key:'сострадание, воображение, растворение', text:'Чувствительная, сострадательная, творческая натура. Богатое воображение, интуиция, способность чувствовать чужое. Склонность к эскапизму, жертвенности и размытым границам.' }
   };
+  // Обогащение портретов знаков из reading-content.js
+  if (RC.SIGN_RICH) {
+    for (var _sn in RC.SIGN_RICH) {
+      if (SIGN_CORE[_sn]) { SIGN_CORE[_sn].text = RC.SIGN_RICH[_sn].text; SIGN_CORE[_sn].advice = RC.SIGN_RICH[_sn].advice; }
+    }
+  }
 
   var NAK_MEANING = {
     'Ашвини':'энергия первопроходца, быстрота, целительство, самостоятельный старт',
@@ -58,6 +81,10 @@
     'Уттара-Бхадрапада':'глубина, устойчивость, мудрость, «мудрец на дне»',
     'Ревати':'завершение цикла, питание, сострадание, защита'
   };
+  // Обогащение накшатр из reading-content.js
+  if (RC.NAK_RICH) {
+    for (var _nk in RC.NAK_RICH) { NAK_MEANING[_nk] = RC.NAK_RICH[_nk]; }
+  }
 
   var PLANET_ROLE = {
     'Солнце':'душа, эго, власть, отец, достоинство, сердце, правительство',
@@ -201,6 +228,9 @@
   }
 
   function planetInSign(planet, sign){
+    if (RC.PLANET_IN_SIGN && RC.PLANET_IN_SIGN[planet] && RC.PLANET_IN_SIGN[planet][sign]) {
+      return RC.PLANET_IN_SIGN[planet][sign];
+    }
     var el = SIGN_CORE[sign].el;
     var roles = PLANET_ROLE[planet].split(',')[0];
     var feel = {
@@ -216,6 +246,9 @@
   }
 
   function planetInHouse(planet, house){
+    if (RC.PLANET_IN_HOUSE && RC.PLANET_IN_HOUSE[planet] && RC.PLANET_IN_HOUSE[planet][house]) {
+      return RC.PLANET_IN_HOUSE[planet][house];
+    }
     var houseMap = {
       'Солнце': {1:'личность сияет сама по себе, лидерство',2:'деньги через статус и достоинство, речь авторитетна',3:'воля через коммуникацию и смелость',4:'душа в доме и семье, потребность в корнях',5:'интеллект и творчество яркие, лидерство в обучении',6:'сила побеждать врагов и болезни, служение',7:'партнёр важен для самооценки, публичность',8:'глубинная трансформация, интерес к тайнам',9:'удача через отца/наставника, философия, дхарма',10:'власть, карьера, статус, амбиции',11:'доход и влияние через друзей и сети',12:'эго уходит в уединение/заграницу, скромность'},
       'Луна': {1:'эмоции «на лице», чувствительная личность',2:'эмоции связаны с деньгами и семьёй',3:'беспокойный ум, много общения',4:'глубокая связь с матерью и домом, уют',5:'творческие эмоции, любовь к детям',6:'тревожность, забота о здоровье, служение',7:'эмоции зависят от партнёра',8:'глубокие, скрытые чувства, интуиция',9:'вера, духовность, связь с матерью/учителем',10:'эмоции в карьере, публичность',11:'дружелюбие, доход через общение',12:'уединение, воображение, заграница'},
@@ -314,7 +347,9 @@
       var ak = P(chart.atmakaraka);
       var brief = 'Лагна в <b>' + lagnaSign + '</b> (' + lg.el + ', ' + lg.q + '), управитель — <b>' + chart.lagnaLord + '</b>; Атмакарака — <b>' + ak.ru + '</b>.';
       var items = [];
-      items.push('<h4>Восходящий знак (Лагна)</h4><p>' + lagnaSign + ' — ' + lg.el + ' стихия, ' + lg.q + ' знак, ' + lg.gen + ' род, доша «' + lg.dosha + '». ' + lg.text + '</p>');
+      var elAdj = { 'огонь':'огненного', 'земля':'земного', 'воздух':'воздушного', 'вода':'водного' };
+      var elGen = { 'огонь':'огненная', 'земля':'земная', 'воздух':'воздушная', 'вода':'водная' };
+      items.push('<h4>Восходящий знак (Лагна)</h4><p>' + lagnaSign + ' — ' + elGen[lg.el] + ' стихия, ' + lg.q + ' знак, ' + lg.gen + ' род, доша «' + lg.dosha + '». ' + lg.text + '</p>');
       items.push('<h4>Накшатра Лагны</h4><p>Вы родились под накшатрой <b>' + chart.lagna.nakshatra + '</b> (пада ' + chart.lagna.pada + ', управитель ' + chart.lagna.nakLord + '). ' + NAK_MEANING[chart.lagna.nakshatra] + '.</p>');
       items.push('<h4>Управитель Лагны</h4><p><b>' + chart.lagnaLord + '</b> (управитель вашего «Я») стоит в знаке ' + llp.sign + ', ' + llp.house + '-й дом' + (llp.dignity ? ', <b>' + llp.dignity + '</b>' : '') + '. ' + planetInSign(chart.lagnaLord, llp.sign) + ' ' + planetInHouse(chart.lagnaLord, llp.house) + ' Это ключ ко всей карте: через сферу ' + llp.house + '-го дома (' + HOUSE_MEANING[llp.house] + ') реализуется ваша личность.</p>');
       items.push('<h4>Солнце (душа, эго)</h4><p><b>Солнце</b> в ' + P('Sun').sign + ' (' + P('Sun').house + '-й дом)' + (P('Sun').dignity ? ', <b>' + P('Sun').dignity + '</b>' : '') + '. ' + SIGN_CORE[P('Sun').sign].text + ' ' + planetInHouse('Солнце', P('Sun').house) + '</p>');
@@ -332,7 +367,8 @@
       })[dom] + '.</p>');
       var human = 'По натуре вы — «' + lg.key + '». Ваш восходящий знак (Лагна) — это то, как вас видят люди и как вы сами входите в жизнь. ' +
         'Ваша главная «движущая сила» — планета ' + chart.lagnaLord + ', а она отвечает у вас за сферу «' + HOUSE_PLAIN[llp.house] + '»: значит, именно там (а не в другом) вы по-настоящему раскрываетесь и черпаете энергию. ' +
-        'Ум и чувства у вас ' + SIGN_CORE[P('Moon').sign].el + 'ного склада, а главный урок этой жизни — научиться через тему «' + PLANET_PLAIN[ak.ru] + '».';
+        'Ум и чувства у вас ' + elAdj[SIGN_CORE[P('Moon').sign].el] + ' склада, а главный урок этой жизни — научиться через тему «' + PLANET_PLAIN[ak.ru] + '».';
+      if (lg.advice) human += ' И главный совет вашей Лагны: ' + lg.advice;
       // Известные положения
       var notable = findNotable(chart);
       if (notable.length){
@@ -434,15 +470,18 @@
         12:'работа «за кулисами», заграница, духовность, благотворительность'
       };
       var brief = '10-й дом (карьера) — ' + SIGNS[h10] + ', управитель ' + h10lord + ' в ' + h10lp.house + '-м доме.';
+      var career = (RC.CAREER && RC.CAREER[h10lp.house]) || { headline: careerNotes[h10lp.house], roles:'', format:'', growth:'' };
       var items = [];
       items.push('<h4>10-й дом — карьера</h4><p>10-й дом в знаке <b>' + SIGNS[h10] + '</b> (' + SIGN_CORE[SIGNS[h10]].el + '): ' + SIGN_CORE[SIGNS[h10]].text + ' Управитель — <b>' + h10lord + '</b>.</p>');
       items.push('<h4>Управитель 10-го дома</h4><p><b>' + h10lord + '</b> стоит в ' + h10lp.house + '-м доме (' + h10lp.sign + ')' + (h10lp.dignity ? ', <b>' + h10lp.dignity + '</b>' : '') + '. ' + planetInSign(h10lord, h10lp.sign) + ' ' + planetInHouse(h10lord, h10lp.house) + '</p>');
-      items.push('<h4>Формула профессии</h4><p>10-й управитель в ' + h10lp.house + '-м доме: <b>' + careerNotes[h10lp.house] + '</b>.</p>');
+      items.push('<h4>Формула профессии</h4><p>10-й управитель в ' + h10lp.house + '-м доме: <b>' + career.headline + '</b>.</p>');
+      if (career.roles) items.push('<h4>Современные форматы и роли</h4><p>По вашей формуле хорошо подходят: <b>' + career.roles + '</b>. ' + career.format + '</p>');
+      if (career.growth) items.push('<h4>Как расти в карьере</h4><p>' + career.growth + '</p>');
       items.push('<h4>Дополнительные показатели</h4><p>Карта Д-10 (дашамша): Лагна Д-10 в <b>' + SIGNS[d10lagna] + '</b> (' + SIGN_CORE[SIGNS[d10lagna]].key + '). Навамша-Лагна (Д-9, дхарма) в <b>' + SIGNS[d9lagna] + '</b>. Профессиональная реализация неразрывно связана с вашим внутренним предназначением.</p>');
       items.push('<h4>Солнце и Марс в карьере</h4><p>Солнце (в ' + P('Sun').sign + ', ' + P('Sun').house + '-й дом) указывает на авторитет и статус; Марс (в ' + P('Mars').sign + ', ' + P('Mars').house + '-й дом) — на энергию, конкуренцию и способ действия. ' + planetInHouse('Солнце', P('Sun').house) + ' ' + planetInHouse('Марс', P('Mars').house) + '</p>');
       items.push('<h4>Карта Д-10 подробно</h4><p>В карте карьеры (Д-10) каждая планета показывает свою грань профессии: Солнце в ' + SIGNS[P('Sun').dashamsaSign] + ' (авторитет), Луна в ' + SIGNS[P('Moon').dashamsaSign] + ' (публика/отношение людей), Меркурий в ' + SIGNS[P('Mercury').dashamsaSign] + ' (ум и речь в деле), Венера в ' + SIGNS[P('Venus').dashamsaSign] + ' (эстетика/финансы), Марс в ' + SIGNS[P('Mars').dashamsaSign] + ' (энергия/конкуренция), Юпитер в ' + SIGNS[P('Jupiter').dashamsaSign] + ' (мудрость/рост), Сатурн в ' + SIGNS[P('Saturn').dashamsaSign] + ' (структура/дисциплина).</p>');
-      var formula = 'Формула призвания: «' + careerNotes[h10lp.house].split(',')[0] + '», который опирается на ' + PLANET_PLAIN[h10lord] + '. Чем выше «смысловой» уровень деятельности (знание, наставничество, управление смыслом), тем сильнее ваша реализация.';
-      var human = 'Если без терминов: ваша работа по своей природе — «' + careerNotes[h10lp.house] + '». ' +
+      var formula = 'Формула призвания: «' + career.headline + '», с опорой на ' + PLANET_PLAIN[h10lord] + '. Чем выше «смысловой» уровень деятельности (знание, наставничество, управление смыслом), тем сильнее ваша реализация.';
+      var human = 'Если без терминов: ваша работа по своей природе — «' + career.headline + '». ' +
         'Это не значит, что нужно обязательно менять профессию — но именно в таком формате (и через сферу «' + HOUSE_PLAIN[h10lp.house] + '») вы будете чувствовать себя на своём месте и расти. ' +
         'При выборе дела опирайтесь на свою сильную сторону — ' + PLANET_PLAIN[h10lord] + ' (ваш управитель карьеры).';
       items.push('<div class="formula">💠 ' + formula + '</div>');
@@ -460,6 +499,9 @@
       items.push('<h4>Дом накоплений (2-й)</h4><p>2-й дом в <b>' + SIGNS[h2] + '</b> (' + SIGN_CORE[SIGNS[h2]].el + '), управитель <b>' + h2lord + '</b> в ' + h2p.house + '-м доме (' + h2p.sign + (h2p.dignity ? ', ' + h2p.dignity : '') + '). ' + planetInSign(h2lord, h2p.sign) + ' ' + planetInHouse(h2lord, h2p.house) + '</p>');
       items.push('<h4>Дом дохода (11-й)</h4><p>11-й дом в <b>' + SIGNS[h11] + '</b>, управитель <b>' + h11lord + '</b> в ' + h11p.house + '-м доме (' + h11p.sign + (h11p.dignity ? ', ' + h11p.dignity : '') + '). ' + planetInSign(h11lord, h11p.sign) + ' ' + planetInHouse(h11lord, h11p.house) + '</p>');
       items.push('<h4>Дом инвестиций и удачи (5-й и 9-й)</h4><p>5-й дом (интеллект, инвестиции) — <b>' + SIGNS[h5] + '</b> (упр. ' + h5lord + '). 9-й дом (удача, дхарма) — <b>' + SIGNS[h9] + '</b> (упр. ' + h9lord + '). Через них видно «кармическое» везение в деньгах.</p>');
+      if (RC.MONEY_STYLE && RC.MONEY_STYLE[h11p.house]) {
+        items.push('<h4>Ваш денежный стиль</h4><p>' + RC.MONEY_STYLE[h11p.house] + '</p>');
+      }
       var yogas = [];
       if (h2p.house===11) yogas.push('2-й управитель в 11-м — <b>дхана-йога</b>: накопление встречается с доходом.');
       if (h11p.house===2) yogas.push('11-й управитель во 2-м — <b>дхана-йога</b>: доход переходит в накопление.');
@@ -479,6 +521,15 @@
       if (P('Mercury').combust) traps.push('сожжённый Меркурий (торговля/расчёт) — недоплата за труд');
       if ([1,4,7,8,12].indexOf(P('Mars').house)>=0) traps.push('Марс в «расходном» доме — импульсивные траты');
       items.push('<h4>Ловушки</h4><p>Слабые места денег: ' + (traps.length ? traps.join('; ') + '.' : 'выраженных нет.') + '</p>');
+      if (RC.MONEY_ADVICE) {
+        var moneyAdvice = [].concat(
+          h2p.combust ? [RC.MONEY_ADVICE.h2_combust] : [],
+          h11p.combust ? [RC.MONEY_ADVICE.h11_combust] : [],
+          P('Mercury').combust ? [RC.MONEY_ADVICE.merc_combust] : [],
+          ([1,4,7,8,12].indexOf(P('Mars').house) >= 0) ? [RC.MONEY_ADVICE.mars_bad] : []
+        );
+        if (moneyAdvice.length) items.push('<h4>Практические шаги</h4><ul>' + moneyAdvice.map(function(a){ return '<li>' + a + '</li>'; }).join('') + '</ul>');
+      }
       var human = 'Простыми словами: деньги к вам приходят через «' + HOUSE_PLAIN[h11p.house] + '» (там стоит управитель дохода ' + h11lord + '), а копить их лучше через «' + HOUSE_PLAIN[h2p.house] + '». ' +
         (yogas.length ? 'В карте есть комбинации, сулящие достаток, — ' + yogas.length + ' шт., это хороший знак для общего благосостояния. ' : '') +
         (traps.length ? 'Осторожнее с тем, куда деньги «утекают»: ' + traps.join('; ') + '.' : 'Явных «дыр», куда утекают деньги, в карте не видно.');
@@ -502,6 +553,12 @@
       items.push('<h4>Венера — карака любви</h4><p><b>Венера</b> в ' + venus.sign + ' (' + venus.house + '-й дом)' + (venus.dignity ? ', <b>' + venus.dignity + '</b>' : '') + (venus.combust ? ', <b>сожжена</b>' : '') + '. ' + planetInSign('Венера', venus.sign) + ' ' + planetInHouse('Венера', venus.house) + '</p>');
       items.push('<h4>Марс и мангала-доша</h4><p><b>Марс</b> в ' + mars.sign + ' (' + mars.house + '-й дом). ' + ([1,4,7,8,12].indexOf(mars.house)>=0 ? 'Это позиция <b>мангала-доши</b> — вспышки и трение в браке, которые смягчаются совместимым партнёром.' : 'Мангала-доша не выражена — меньше трений на тему агрессии в браке.') + '</p>');
       items.push('<h4>Юпитер (для женщины — показатель мужа)</h4><p><b>Юпитер</b> в ' + jup.sign + ' (' + jup.house + '-й дом)' + (jup.dignity ? ', <b>' + jup.dignity + '</b>' : '') + '. ' + planetInSign('Юпитер', jup.sign) + ' ' + planetInHouse('Юпитер', jup.house) + '</p>');
+      var partner = (RC.PARTNER && RC.PARTNER[SIGNS[h7]]) || null;
+      if (partner) {
+        items.push('<h4>Портрет вашего партнёра</h4><p>' + partner.image + '</p>' +
+          '<p><b>Кого вы притягиваете:</b> ' + partner.attracts + '</p>' +
+          '<p><b>Как строить отношения:</b> ' + partner.advice + '</p>');
+      }
       var human = 'Простыми словами: в отношениях вам важно «' + SIGN_CORE[SIGNS[h7]].key + '». ' +
         ' Партнёра «притягивает» тема «' + HOUSE_PLAIN[h7p.house] + '» (там стоит управитель вашего 7-го дома). ' +
         (venus.combust ? 'Так как ваша Венера (планета любви) «ослеплена», в любви вам труднее проявлять мягкость и чувствовать себя любимой — над этим стоит работать осознанно. ' : '') +
@@ -530,7 +587,17 @@
       if (P('Sun').house===1) weakZones.push('Солнце в Лагне → сердце, давление, «горячая кровь»');
       if (P('Mars').house===12 || P('Mars').house===8) weakZones.push('Марс в 8/12-м → скрытые воспаления, склонность к операциям');
       items.push('<h4>Слабые зоны</h4><p>' + (weakZones.length ? '<b>Возможные уязвимые места (тенденции, не диагноз):</b> ' + weakZones.join('; ') + '.' : 'Явных слабых зон по планетам нет.') + '</p>');
-      items.push('<h4>Рекомендации</h4><p>Режим сна, умеренная физическая нагрузка как «клапан» для накопленного стресса, регулярные профилактические проверки, баланс дош через питание и образ жизни. <i>Это не медицинский диагноз — за здоровьем обращайтесь к врачу.</i></p>');
+      var hd = (RC.HEALTH_DOSHA) ? RC.HEALTH_DOSHA[dom] : null;
+      if (hd) {
+        items.push('<h4>Рекомендации</h4>' +
+          '<p><b>Питание:</b> ' + hd.food + '</p>' +
+          '<p><b>Режим дня:</b> ' + hd.rhythm + '</p>' +
+          '<p><b>Работа со стрессом:</b> ' + hd.stress + '</p>' +
+          '<p><b>Спорт:</b> ' + hd.sport + '</p>' +
+          '<p><i>Это не медицинский диагноз — за здоровьем обращайтесь к врачу.</i></p>');
+      } else {
+        items.push('<h4>Рекомендации</h4><p>Режим сна, умеренная физическая нагрузка как «клапан» для накопленного стресса, регулярные профилактические проверки, баланс дош через питание и образ жизни. <i>Это не медицинский диагноз — за здоровьем обращайтесь к врачу.</i></p>');
+      }
       var human = 'Простыми словами: ваше тело по типу — ' + domDesc + '. ' +
         (weakZones.length ? 'Стоит бережнее относиться к следующим местам (это тенденции, а не диагноз): ' + weakZones.map(function(z){ return z.split(' → ')[1]; }).join(', ') + '. ' : '') +
         'Главное правило здоровья для вас — ' + ({ 'Питта':'не перегреваться и «остужать» гнев', 'Ватта':'соблюдать режим и высыпаться', 'Капха':'больше двигаться и не застаиваться' })[dom] + '.';
@@ -642,6 +709,71 @@
         (withTargets.some(function(a){ return isMalefic(a.fromRu); }) ? ' Есть и напряжённые аспекты — сферы, которые требуют терпения и проработки.' : '');
       s.push({ id:'aspects', title:'Аспекты планет', brief: brief, human: human, items: items });
     })();
+
+    // ===== 13. ВЗАИМОДЕЙСТВИЯ ПЛАНЕТ =====
+    if (IA) {
+      var _ia = IA.analyze(chart);
+      (function(){
+        var ia = _ia;
+        var brief = 'Соединения: ' + ia.conjunctions.length + ' · Оппозиции: ' + ia.oppositions.length +
+          ' · Йоги: ' + (ia.yogas.length + ia.parivartanas.length) + ' · Сожжения: ' + ia.combust.length +
+          ' · Падения: ' + ia.falls.length + ' · Экзальтации: ' + ia.exalts.length + '.';
+        var items = [];
+        function block(title, arr, empty){
+          if (!arr.length){ if (empty) items.push('<h4>' + title + '</h4><p>' + empty + '</p>'); return; }
+          items.push('<h4>' + title + '</h4>');
+          arr.forEach(function(x){ items.push('<p><b>' + x.title + '.</b> ' + x.text + '</p>'); });
+        }
+        block('Соединения — планеты в одном знаке', ia.conjunctions, 'Соединений в карте нет — планеты действуют независимо друг от друга.');
+        block('Оппозиции — планеты в противоположных знаках', ia.oppositions, 'Оппозиций нет — ярко выраженных осей напряжения между планетами не видно.');
+        block('Йоги — особые комбинации', ia.yogas.concat(ia.parivartanas), 'Классические йоги не обнаружены — карта читается через дома и их управителей.');
+        block('Сожжения (подробно)', ia.combust, 'Сожженных планет нет — все планеты на комфортном расстоянии от Солнца.');
+        block('Падения (подробно)', ia.falls, 'Планет в падении нет.');
+        block('Экзальтации (подробно)', ia.exalts, 'Планет на пике экзальтации нет — сила набирается через собственные знаки и дома.');
+        block('Ретроградность (подробно)', ia.retro, 'Ретроградных личных планет нет.');
+        block('«Не в своей стихии»', ia.discomfort, 'Все планеты стоят в своих или дружественных знаках — это важный ресурс карты.');
+        block('Толкование аспектов «планета → планета»', ia.aspectNotes, '');
+        var human = 'Планеты в карте — как люди в одной команде: соединения «дружат» и работают вместе, оппозиции «спорят» и качают вас из стороны в сторону, аспекты постоянно «переговариваются», а сожжения и падения — зоны, где энергию приходится беречь и тренировать. Здесь разобраны все такие связи в вашей карте, а итог по ним — в следующем разделе.';
+        s.push({ id:'interactions', title:'Взаимодействия планет', brief: brief, human: human, items: items });
+      })();
+
+      // ===== 14. ИТОГ =====
+      (function(){
+        var sm = _ia.summary;
+        var brief = 'Гармоничных взаимодействий: ' + sm.harmony + ' · напряжённых: ' + sm.tension +
+          ' · сильных положений: ' + sm.strong.length + ' · ослабленных: ' + sm.weak.length + '.';
+        var items = ['<p>' + sm.verdict + '</p>'];
+        var human = 'Если свести всё прочитанное к одному диагнозу: это ваша конфигурация сил и слабостей. Она неизменна по жизни, но то, как она проявится, зависит от вас: сильные планеты — ваш «газ», слабые — навык, который тренируется. Карта не обещает и не пугает — она показывает, где у вас заводские настройки, а где нужно рулить вручную.';
+        s.push({ id:'synthesis', title:'Итог: общая картина', brief: brief, human: human, items: items });
+      })();
+    }
+
+    // ===== 15. ПРЕДНАЗНАЧЕНИЕ: ЗАДАЧИ, ХАРАКТЕР, КАРМА =====
+    if (DS) {
+      (function(){
+        var d = DS.analyze(chart);
+        var brief = 'Кармическая ось: Кету в ' + d.axis.ketuHouse + '-м доме → Раху в ' + d.axis.rahuHouse +
+          '-м доме. Атмакарака: ' + d.soul.planet + '. Кармических долгов: ' + d.debts.length + '.';
+        var items = [];
+        items.push('<h4>Кармическая ось (Раху–Кету)</h4>' +
+          '<p><b>Откуда вы идёте — Кету в ' + d.axis.ketuHouse + '-м доме (' + d.axis.ketuSign + ').</b> ' + d.axis.ketuText + '</p>' +
+          '<p><b>Куда идёт душа — Раху в ' + d.axis.rahuHouse + '-м доме (' + d.axis.rahuSign + ').</b> ' + d.axis.rahuText + '</p>');
+        items.push('<h4>Главный урок души (Атмакарака — ' + d.soul.planet + ')</h4><p>' + d.soul.text +
+          ' Планета стоит в ' + d.soul.sign + ' (' + d.soul.house + '-й дом) — урок разворачивается через сферу «' + DS.houseTheme(d.soul.house) + '».</p>');
+        items.push('<h4>Кармические долги</h4>' + (d.debts.length
+          ? d.debts.map(function(x){ return '<p><b>' + x.title + '.</b> ' + x.text + '</p>'; }).join('')
+          : '<p>Планет в трудных домах (6/8/12) нет — «тяжёлых» кармических долгов карта не показывает.</p>'));
+        items.push('<h4>Над чем работать в характере</h4>' + (d.character.length
+          ? d.character.map(function(c){ return '<p><b>' + c.title + '.</b> Черта: ' + c.trait + (c.work ? ' <b>Что делать:</b> ' + c.work : '') + '</p>'; }).join('')
+          : '<p>Явных «точек трения» в характере не выявлено — карта по характеру мягкая.</p>'));
+        items.push('<h4>Первоочередные задачи</h4><ol>' + d.priorities.map(function(p){
+          return '<li><b>' + p.title + '.</b> ' + (p.text || '') + '</li>';
+        }).join('') + '</ol>');
+        items.push('<h4>План действий</h4><ul>' + d.plan.map(function(p){ return '<li>' + p + '</li>'; }).join('') + '</ul>');
+        var human = 'Это «выжимка всей карты» простыми словами: Кету показывает, что вы уже умеете и где склонны залипать; Раху — куда растёт душа; Атмакарака — главный урок; планеты в 6/8/12 домах — долги, которые закрываются не наказанием, а осознанностью; а нумерованный список задач — за что браться первым. Не пытайтесь закрыть всё сразу: один приоритет за сезон.';
+        s.push({ id:'destiny', title:'Ваш план: задачи, характер, карма', brief: brief, human: human, items: items });
+      })();
+    }
 
     return s;
   }

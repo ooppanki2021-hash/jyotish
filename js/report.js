@@ -39,7 +39,7 @@
     '.humanbox{background:#eef3f7;border:1px solid #d3dde8;border-radius:8px;padding:10px 12px;margin:10px 0;font-size:13.5px}',
     '.formula{background:#f6ead2;border:1px solid #e2d0a8;border-left:3px solid #b98a3a;border-radius:8px;padding:10px 12px;margin:10px 0;font-size:13.5px}',
     '.score{font-size:30px;color:#8a5a00;font-weight:bold}',
-    '.kuta{display:flex;gap:10px;padding:4px 0;border-bottom:1px solid #eee;font-size:12.5px}',
+    '.sphere{page-break-inside:avoid;border:1px solid #ddd;padding:10px;margin:10px 0;border-radius:8px}.kuta{display:flex;gap:10px;padding:4px 0;border-bottom:1px solid #eee;font-size:12.5px}',
     '.disc{font-size:11px;color:#888;margin-top:24px;border-top:1px solid #eee;padding-top:8px}',
     '.pagebreak{page-break-before:always}',
     '.center{text-align:center}',
@@ -56,6 +56,7 @@
     // Заголовок
     parts.push('<h1>Джйотиш-разбор' + (name ? ' — ' + esc(name) : '') + '</h1>');
     parts.push('<div class="meta">Дата рождения: ' + esc(meta.date||'') + ' ' + esc(meta.time||'') +
+      (meta.city ? ' · ' + esc(meta.city) : '') +
       ' · широта ' + esc(meta.lat!==undefined?meta.lat:'') + '°, долгота ' + esc(meta.lon!==undefined?meta.lon:'') +
       '° · UTC ' + esc(meta.tz!==undefined?(meta.tz>0?'+':'')+meta.tz:'') + '</div>');
     parts.push('<div class="meta">Составлено: ' + fmtDate(new Date()) + ' ' + fmtTime(new Date()) +
@@ -152,7 +153,7 @@
   }
 
   // Тот же отчёт, но с блоком совместимости
-  function buildCompatHTML(chart1, chart2, meta1, meta2, koota, synastry){
+  function buildCompatHTML(chart1, chart2, meta1, meta2, koota, synastry, story){
     var base = buildReportHTML(chart1, meta1);
     // вставляем блок совместимости перед закрытием body
     var block = '<h2 class="pagebreak">Совместимость (аштакота-гун-милан)</h2>';
@@ -162,6 +163,18 @@
     koota.kutas.forEach(function(k){
       block += '<div class="kuta"><span style="width:110px">'+esc(k.name)+'</span><span>'+k.score+' / '+k.max+'</span><span style="color:#666;flex:1;text-align:right">'+esc(k.detail)+'</span></div>';
     });
+    // Человеческий рассказ по 19 сферам, если он передан из интерфейса
+    if (story && story.spheres){
+      block += '<h2>Рассказ о совместимости по сферам</h2>';
+      block += '<p><b>Итог: '+story.total.score+' / 10.</b> '+esc(story.total.verdict)+'</p>';
+      story.spheres.forEach(function(sp){
+        block += '<div class="sphere"><h3>'+esc(sp.emoji+' '+sp.name)+' — '+sp.score+'/10</h3><p>'+esc(sp.story)+'</p>';
+        if(sp.pros&&sp.pros.length) block+='<p><b>Плюсы:</b> '+esc(sp.pros.join(' · '))+'</p>';
+        if(sp.cons&&sp.cons.length) block+='<p><b>Сложности:</b> '+esc(sp.cons.join(' · '))+'</p>';
+        if(sp.risks&&sp.risks.length) block+='<p><b>Риски:</b> '+esc(sp.risks.join(' · '))+'</p>';
+        block += '<p><b>Что делать:</b> '+esc(sp.action||'')+'</p></div>';
+      });
+    }
     // глубокая синастрия
     if (synastry && synastry.sections){
       synastry.sections.forEach(function(s){
