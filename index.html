@@ -134,7 +134,7 @@
   <section class="panel" id="tab-muhurta">
     <div class="card">
       <h2>Выбор благоприятного времени (мухурта)</h2>
-      <p class="muted">Подбор удачных дат и часов для важных дел по панчанге: титхи (лунный день), вара (день недели), накшатра, а также исключение Раху-калы, Ямаганды и Гулики.</p>
+      <p class="muted">Подбор удачных дат и часов для важных дел по панчанге: титхи (лунный день), вара (день недели), накшатра, а также исключение Раху-калы, Ямаганды и Гулики. Показываются <b>ближайшие благоприятные даты</b> — даже если до них несколько месяцев.</p>
       <div class="form-grid">
         <label>Широта (°, +север)
           <input type="number" id="m-lat" step="any" value="43.02">
@@ -157,8 +157,8 @@
             <option value="health">Медицинская процедура</option>
           </select>
         </label>
-        <label>Горизонт поиска (дней)
-          <input type="number" id="m-days" min="1" max="30" value="7">
+        <label>Сколько дат показать
+          <input type="number" id="m-count" min="1" max="10" value="3">
         </label>
         <div class="form-actions">
           <button type="button" id="m-go" class="btn primary">Найти благоприятное время</button>

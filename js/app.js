@@ -478,7 +478,7 @@
   }
   function onMuhurta(){
     var lat = parseFloat($('m-lat').value), lon = parseFloat($('m-lon').value), tz = parseFloat($('m-tz').value);
-    var days = parseInt($('m-days').value, 10) || 7;
+    var count = parseInt(($('m-count')||{}).value, 10) || 3;
     var activity = $('m-activity').value;
     if (isNaN(lat) || isNaN(lon) || isNaN(tz)){ alert('Укажите широту, долготу и часовой пояс.'); return; }
     try {
@@ -486,23 +486,39 @@
       $('m-panchanga-body').innerHTML = renderPanchanga(p, tz);
     } catch(e){ $('m-panchanga-body').innerHTML = '<span class="muted">Ошибка панчанги: ' + esc(e.message) + '</span>'; }
 
-    var r = Muhurta.findMuhurta(lat, lon, tz, activity, days, 30);
     var el = $('m-result');
     el.classList.remove('hidden');
-    var daysHtml = r.days.map(function(d){
-      var winHtml;
-      if (d.windows.length){
-        winHtml = d.windows.map(function(w){
-          return '<div class="win"><b>' + fmtLocal(w.start, tz) + ' – ' + fmtLocal(w.end, tz) + '</b>' +
-            '<span class="muted"> · ' + esc(w.tithi) + ' · ' + esc(w.nak) + ' · балл ' + w.score + '</span></div>';
-        }).join('');
-      } else {
-        winHtml = '<div class="muted">В этот день благоприятных окон не найдено.</div>';
-      }
-      return '<div class="daycard"><div class="dayhead"><b>' + fmtLocalDay(d.date, tz) + '</b> <span class="muted">' + esc(d.varaName) + ' · ' + esc(d.tithi) + ' · ' + esc(d.nakshatra) + '</span></div>' + winHtml + '</div>';
+    var r;
+    try {
+      r = Muhurta.findNextMuhurta(lat, lon, tz, activity, count, 400, 30);
+    } catch(e){
+      el.innerHTML = '<div class="card"><span class="muted">Ошибка расчёта: ' + esc(e.message) + '</span></div>';
+      return;
+    }
+    if (!r.days.length){
+      el.innerHTML = '<div class="card"><h2>Ближайшие благоприятные даты: ' + esc(r.activity) + '</h2>' +
+        '<p class="muted">За 400 дней вперёд благоприятных окон не найдено. Попробуйте другой тип дела или смягчите требования.</p></div>';
+      return;
+    }
+    var daysHtml = r.days.map(function(d, i){
+      var when = d.daysUntil === 0 ? 'сегодня' : d.daysUntil === 1 ? 'завтра' : 'через ' + d.daysUntil + ' дн';
+      var winHtml = d.windows.map(function(w){
+        var best = (w === d.best);
+        return '<div class="win' + (best ? ' best' : '') + '"><b>' + fmtLocal(w.start, tz) + ' – ' + fmtLocal(w.end, tz) + '</b>' +
+          '<span class="muted"> · ' + esc(w.tithi) + ' · ' + esc(w.nak) + ' · балл ' + w.score + '</span>' +
+          (best ? '<span class="bestmark">лучшее окно</span>' : '') + '</div>';
+      }).join('');
+      var kalas = '<div class="kalas">' + kalaLine(d.kalas.rahu, 'Раху-кала (избегайте)', tz) + kalaLine(d.kalas.yamaganda, 'Ямаганда', tz) + '</div>';
+      return '<div class="daycard"><div class="dayhead"><span class="ord">' + (i+1) + '</span>' +
+        '<b>' + fmtLocalDay(d.date, tz) + '</b>' +
+        '<span class="muted">' + esc(d.varaName) + ' · ' + esc(d.tithi) + ' · ' + esc(d.nakshatra) + '</span>' +
+        '<span class="indays">' + when + '</span></div>' + winHtml + kalas + '</div>';
     }).join('');
-    el.innerHTML = '<div class="card"><h2>Благоприятные окна: ' + esc(r.activity) + '</h2>' + daysHtml +
-      '<p class="muted" style="margin-top:10px">Поиск от восхода до захода с шагом 30 минут. Исключены Раху-кала, Ямаганда и Гулика. Порог «благоприятно» — хорошие титхи + день недели + накшатра.</p></div>';
+    el.innerHTML = '<div class="card"><h2>Ближайшие благоприятные даты: ' + esc(r.activity) + '</h2>' + daysHtml +
+      '<p class="muted" style="margin-top:10px">Поиск идёт от сегодняшнего дня вперёд до 400 дней: показываются первые ' +
+      r.days.length + ' дат(ы), где есть благоприятные окна (просмотрено дней: ' + r.scanned + '). ' +
+      'Окна считаются от восхода до захода с шагом 30 минут, Раху-кала, Ямаганда и Гулика исключены. ' +
+      'Порог «благоприятно» — хорошие титхи + день недели + накшатра.</p></div>';
     el.scrollIntoView({ behavior:'smooth' });
   }
 
