@@ -89,14 +89,14 @@
 
   // ---------- Оценка для деятельности ----------
   var ACTIVITIES = {
-    marriage: { label:'Брак / помолвка', goodTithi:[2,3,5,7,10,11,13], badTithi:[4,9,14,30], goodNak:[3,4,6,7,11,12,14,16,20,21,22,25,26], badNak:[1,5,8,17,18], goodVara:[1,3,4,5], badVara:[2,6] },
-    business: { label:'Начало бизнеса / дела', goodTithi:[2,3,5,7,10,11,13,15], badTithi:[4,9,14,30], goodNak:[3,4,7,11,12,13,16,20,21,22,25], badNak:[1,5,8,17,18], goodVara:[1,3,4,5], badVara:[2,6] },
-    property: { label:'Недвижимость / новоселье', goodTithi:[2,3,5,7,10,11,13], badTithi:[4,9,14,30], goodNak:[3,11,12,20,21,22,25,26], badNak:[1,5,8,17,18], goodVara:[4,5], badVara:[2] },
-    travel:   { label:'Путешествие / поездка', goodTithi:[2,3,5,7,10,11,13], badTithi:[4,8,9,14,30], goodNak:[0,4,6,14,16,21,26], badNak:[1,5,8,17,18], goodVara:[1,3,4,5], badVara:[2,6] },
-    education:{ label:'Начало обучения', goodTithi:[2,3,5,7,10,11,13], badTithi:[4,9,14,30], goodNak:[0,4,6,7,12,13,16,21], badNak:[1,5,8,17,18], goodVara:[1,3,4,5], badVara:[2,6] },
-    health:   { label:'Медицинская процедура', goodTithi:[2,3,5,7,10,11,13], badTithi:[4,9,14,30], goodNak:[4,6,7,12,16,21,25], badNak:[1,5,8,17,18], goodVara:[1,2,3,4,5], badVara:[0,6] },
-    finance:  { label:'Финансовые операции', goodTithi:[2,3,5,7,10,11,13,15], badTithi:[4,9,14,30], goodNak:[3,7,11,12,16,20,21,22,25], badNak:[1,5,8,17,18], goodVara:[1,3,4,5], badVara:[2,6] },
-    general:  { label:'Важное дело / встреча', goodTithi:[2,3,5,7,10,11,13], badTithi:[4,9,14,30], goodNak:[3,4,6,7,11,12,13,14,16,20,21,22,25,26], badNak:[1,5,8,17,18], goodVara:[1,3,4,5], badVara:[2,6] }
+    marriage: { label:'Брак / помолвка (отношения)', goodTithi:[2,3,5,7,10,11,13], badTithi:[4,9,14,30], goodNak:[3,4,6,7,11,12,14,16,20,21,22,25,26], badNak:[1,5,8,17,18], goodVara:[1,3,4,5], badVara:[2,6] },
+    business: { label:'Бизнес (своё дело, клиенты, запуск)', goodTithi:[2,3,5,7,10,11,13,15], badTithi:[4,9,14,30], goodNak:[3,4,7,11,12,13,16,20,21,22,25], badNak:[1,5,8,17,18], goodVara:[1,3,4,5], badVara:[2,6] },
+    property: { label:'Недвижимость / переезд / новоселье', goodTithi:[2,3,5,7,10,11,13], badTithi:[4,9,14,30], goodNak:[3,11,12,20,21,22,25,26], badNak:[1,5,8,17,18], goodVara:[4,5], badVara:[2] },
+    travel:   { label:'Поездка / путешествие', goodTithi:[2,3,5,7,10,11,13], badTithi:[4,8,9,14,30], goodNak:[0,4,6,14,16,21,26], badNak:[1,5,8,17,18], goodVara:[1,3,4,5], badVara:[2,6] },
+    education:{ label:'Рост / учёба (курсы, экзамены)', goodTithi:[2,3,5,7,10,11,13], badTithi:[4,9,14,30], goodNak:[0,4,6,7,12,13,16,21], badNak:[1,5,8,17,18], goodVara:[1,3,4,5], badVara:[2,6] },
+    health:   { label:'Здоровье / медицинская процедура', goodTithi:[2,3,5,7,10,11,13], badTithi:[4,9,14,30], goodNak:[4,6,7,12,16,21,25], badNak:[1,5,8,17,18], goodVara:[1,2,3,4,5], badVara:[0,6] },
+    finance:  { label:'Финансы (деньги: оплаты, займы, вложения)', goodTithi:[2,3,5,7,10,11,13,15], badTithi:[4,9,14,30], goodNak:[3,7,11,12,16,20,21,22,25], badNak:[1,5,8,17,18], goodVara:[1,3,4,5], badVara:[2,6] },
+    general:  { label:'Важное дело (если сомневаетесь или всё сразу)', goodTithi:[2,3,5,7,10,11,13], badTithi:[4,9,14,30], goodNak:[3,4,6,7,11,12,13,14,16,20,21,22,25,26], badNak:[1,5,8,17,18], goodVara:[1,3,4,5], badVara:[2,6] }
   };
 
   function inA(arr, v){ return arr.indexOf(v) >= 0; }
