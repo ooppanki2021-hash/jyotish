@@ -232,8 +232,14 @@
     return result;
   }
 
+  function dayAt(lat, lon, tz, activityKey, off, stepMin){
+    var act = ACTIVITIES[activityKey] || ACTIVITIES.general;
+    return computeDay(lat, lon, tz, act, stepMin || 30, off || 0);
+  }
+
   return {
     panchangaNow: panchangaNow,
+    dayAt: dayAt,
     findMuhurta: findMuhurta,
     findNextMuhurta: findNextMuhurta,
     ACTIVITIES: ACTIVITIES,

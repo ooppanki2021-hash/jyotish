@@ -1008,6 +1008,14 @@
     function h(x){return (x-li+12)%12+1;} var j=h(tr.Jupiter.signIdx), sat=h(tr.Saturn.signIdx), score=0, reasons=[];
     if(j===house){score+=2;reasons.push('Юпитер поддерживает дом дела');} else if(((j-house+12)%12===4)||((house-j+12)%12===4)){score+=1;reasons.push('Юпитер даёт поддерживающий тригон');}
     if(sat===house){score-=2;reasons.push('Сатурн требует задержек и дисциплины');} else if(((sat-house+12)%12===6)){score-=1;reasons.push('Сатурн создаёт дополнительную нагрузку');}
+    // Ежедневный личный слой: транзит Луны от натальной Луны (трин = поддержка, 6/8/12 = напряжение)
+    if (chart.planets && chart.planets.Moon && tr.Moon){
+      var mn = chart.planets.Moon.signIdx;
+      var mh = (tr.Moon.signIdx - mn + 12) % 12 + 1;
+      if ([1,5,9].indexOf(mh) >= 0){ score += 3; reasons.push('Луна в поддержке (трин к вашей Луне)'); }
+      else if ([6,8,12].indexOf(mh) >= 0){ score -= 3; reasons.push('Луна в напряжении (6/8/12 от вашей Луны)'); }
+      else { score += 1; }
+    }
     return {score:score,label:score>=2?'🟢 лично подходит':(score<0?'🔴 требует осторожности':'🟡 нейтрально'),reasons:reasons};
   }
 
@@ -1021,7 +1029,23 @@
       $('m-panchanga-body').innerHTML = renderPanchanga(p, tz);
     } catch(e){ $('m-panchanga-body').innerHTML = '<span class="muted">Ошибка панчанги: ' + esc(e.message) + '</span>'; }
 
-    var r = Muhurta.findNextMuhurta(lat, lon, tz, activity, count, 400, 30);
+    var r = null;
+    var personalMode = false;
+    if (state.chart && state.chart.lagna){
+      var picked = [];
+      for (var off = 0; off < 400 && picked.length < count; off++){
+        var day = Muhurta.dayAt(lat, lon, tz, activity, off, 30);
+        if (!day || !day.windows.length) continue;
+        day.offset = off;
+        var pp = personalForDay(state.chart, activity, day.date);
+        if (pp.score >= 2){ day.personal = pp; picked.push(day); }
+      }
+      if (picked.length){
+        r = { activity: (Muhurta.ACTIVITIES[activity] || Muhurta.ACTIVITIES.general).label, days: picked };
+        personalMode = true;
+      }
+    }
+    if (!r) r = Muhurta.findNextMuhurta(lat, lon, tz, activity, count, 400, 30);
     var el = $('m-result');
     el.classList.remove('hidden');
     var daysHtml = r.days.map(function(d){
@@ -1036,7 +1060,7 @@
       } else {
         winHtml = '<div class="muted">В этот день благоприятных окон не найдено.</div>';
       }
-      var pd = personalForDay(state.chart, activity, d.date);
+      var pd = d.personal || personalForDay(state.chart, activity, d.date);
       var badge = '<span class="pw-badge">' + esc(pd.label) + '</span>';
       var why = pd.reasons.length ? '<div class="muted pw-reasons">' + esc(pd.reasons.join('; ')) + '</div>' : '';
       var clarify = pd.score < 0 ? '<div class="muted pw-clarify">🔴 — личная пометка по вашей карте: общий календарь (окна выше) благоприятен, но транзит Сатурна/Юпитера даёт напряжённый фон. Если дело можно перенести — выберите дату с 🟢.</div>' : '';
@@ -1044,9 +1068,9 @@
       return '<div class="daycard' + (d.offset === 0 ? ' today' : '') + '"><div class="dayhead"><b>' + fmtLocalDay(d.date, tz) + '</b> ' + offBadge + ' ' + badge + why + clarify + ' <span class="muted">' + esc(d.varaName) + ' · ' + esc(d.tithi) + ' · ' + esc(d.nakshatra) + '</span></div>' + winHtml + '</div>';
     }).join('');
     var personal = r.days.map(function(d){return {d:d,p:personalForDay(state.chart,activity,d.date)};}).filter(function(x){return x.p.score>=2;});
-    var personalText = state.chart ? '<div class="pw-summary"><b>Личная проверка по вашей карте:</b> общий календарь дополнен транзитами Юпитера и Сатурна. Ближайший лично благоприятный день: ' + (personal.length ? fmtLocalDay(personal[0].d.date,tz) : 'в выбранном горизонте не найден') + '.</div>' : '<div class="pw-summary">Рассчитайте натальную карту, чтобы добавить персональную проверку дней.</div>';
+    var personalText = state.chart ? '<div class="pw-summary"><b>Личная проверка по вашей карте:</b> транзитная Луна (ежедневно), Юпитер и Сатурн относительно домов дела. ' + (personalMode ? 'В списке только дни с зелёной меткой.' : 'Зелёных дней с окнами в горизонте 400 дней не нашлось, показан общий календарь.') + '</div>' : '<div class="pw-summary">Рассчитайте натальную карту, чтобы видеть только ваши личные благоприятные даты.</div>';
     el.innerHTML = '<div class="card"><h2>Ближайшие благоприятные даты: ' + esc(r.activity) + '</h2>' + personalText +
-      '<p class="muted pw-legend">Метки у дат — личная проверка по вашей карте: 🟢 день подходит и общему календарю, и карте; 🟡 нейтрально; 🔴 общий календарь благоприятен, но по вашей карте день напряжён (Сатурн/Юпитер) — берите лучшее окно с запасом прочности или выберите зелёную дату.</p>' + daysHtml +
+      '<p class="muted pw-legend">' + (personalMode ? 'Показаны ближайшие даты с окнами, которые лично для вас 🟢 (Луна, Юпитер и Сатурн к вашей карте). ' : (state.chart && state.chart.lagna ? 'За 400 дней лично-зелёных дат с окнами не нашлось — показан общий календарь. ' : 'Рассчитайте натальную карту — и список станет личным (только ваши 🟢 даты). Пока показан общий календарь. ')) + 'Метки у дат — личная проверка по вашей карте: 🟢 день подходит и общему календарю, и карте; 🟡 нейтрально; 🔴 общий календарь благоприятен, но по вашей карте день напряжён (Сатурн/Юпитер) — берите лучшее окно с запасом прочности или выберите зелёную дату.</p>' + daysHtml +
       '<p class="muted" style="margin-top:10px">Показаны ближайшие благоприятные даты (до ' + count + ' шт., горизонт поиска — до 400 дней). Поиск от восхода до захода с шагом 30 минут. Исключены Раху-кала, Ямаганда и Гулика. Порог «благоприятно» — хорошие титхи + день недели + накшатра.</p></div>';
     el.scrollIntoView({ behavior:'smooth' });
   }
