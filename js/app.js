@@ -1082,6 +1082,46 @@
     el.scrollIntoView({ behavior:'smooth' });
   }
 
+  // ---------- Календарь на год (12 PDF) ----------
+  function calProg(t){ var el = $('cal-progress'); if (el) el.textContent = t || ''; }
+  function onCalendarPdf(){
+    var list = loadSaved();
+    var sel = $('cal-chart');
+    var idx = parseInt(sel && sel.value, 10);
+    var rec = isNaN(idx) ? null : list[idx];
+    var p = readForm();
+    var by, bm, bd, bhh, bmm, btz, blat, blon;
+    if (rec){
+      var dt = String(rec.date || '').split('-'), tm = String(rec.time || '00:00').split(':');
+      by = +dt[0]; bm = +dt[1]; bd = +dt[2]; bhh = +(tm[0] || 0); bmm = +(tm[1] || 0);
+      btz = +rec.tz || 0; blat = +rec.lat; blon = +rec.lon;
+    } else {
+      by = p.y; bm = p.m; bd = p.d; bhh = p.hh; bmm = p.mm; btz = p.tz; blat = p.lat; blon = p.lon;
+    }
+    if (!by || !blat || isNaN(blat)){ alert('Выберите сохранённую карту или заполните данные рождения на вкладке «Кто я, мой путь».'); return; }
+    var tzCal = parseFloat(($('cal-tz') || {}).value);
+    if (isNaN(tzCal)) tzCal = btz;
+    var fv = ($('cal-from') || {}).value || '';
+    var fy, fm;
+    if (/^\d{4}-\d{2}$/.test(fv)){ fy = +fv.slice(0, 4); fm = +fv.slice(5, 7); }
+    else { var now = new Date(); fy = now.getFullYear(); fm = now.getMonth() + 1; }
+    var ey = (fm + 11 > 12) ? fy + 1 : fy, em = ((fm + 11 - 1) % 12) + 1;
+    var lastDay = new Date(Date.UTC(ey, em, 0)).getUTCDate();
+    calProg('Считаю дни и листы…');
+    setTimeout(function(){
+      try {
+        var res = CalendarPdf.buildYear({
+          by: by, bm: bm, bd: bd, bhh: bhh, bmm: bmm, btz: btz, blat: blat, blon: blon,
+          lat: blat, lon: blon, tz: tzCal,
+          fromY: fy, fromM: fm, fromD: 1, toY: ey, toM: em, toD: lastDay
+        }, { scale: 5.0, onProgress: function(i, n, label){ calProg('Лист ' + (i + 1) + ' из ' + n + ': ' + label); } });
+        if (!res.files.length){ calProg('Не удалось построить листы.'); return; }
+        calProg('Сохраняю файлы…');
+        CalendarPdf.saveAll(res.files, function(i, n, label){ calProg(label + ' (' + i + '/' + n + ')'); });
+      } catch (e){ calProg('Ошибка: ' + e.message); }
+    }, 60);
+  }
+
   // ---------- Тёмная тема ----------
   function initTheme(){
     var key = 'jy_theme';
@@ -1116,6 +1156,11 @@
     $('btn-print').addEventListener('click', onPrint);
     $('btn-save').addEventListener('click', onSave);
     $('m-go').addEventListener('click', onMuhurta);
+    if ($('cal-go')){
+      $('cal-go').addEventListener('click', onCalendarPdf);
+      var cf = $('cal-from');
+      if (cf && !cf.value){ var nw = new Date(); cf.value = nw.getFullYear() + '-' + String(nw.getMonth() + 1).padStart(2, '0'); }
+    }
     // авто-загрузка личной карты из сохранённых, чтобы мухурта сразу была личной
     (function autoChart(){
       var list = loadSaved();

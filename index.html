@@ -146,6 +146,26 @@
           </div>
         </div>
       </div>
+      <div class="card" id="cal-card">
+        <h2>📅 Скачать календарь на год (12 PDF)</h2>
+        <p class="muted">Персональный настенный календарь A4: на каждый день — цветной список сфер МОЖНО / НЕЛЬЗЯ / КАК ОБЫЧНО, окно удачи и плохое время, звёзды дня и лунные сутки; справа — линованное поле для записей. Один файл на месяц, 12 файлов на год — для печати.</p>
+        <div class="form-grid">
+          <label>Чья карта
+            <select id="cal-chart" class="c-saved"></select>
+            <small>Выберите сохранённую карту; если пусто — заполните данные на вкладке «Кто я, мой путь».</small>
+          </label>
+          <label>Начать с месяца
+            <input type="month" id="cal-from" value="2026-10">
+          </label>
+          <label>Часовой пояс места (UTC)
+            <input type="number" id="cal-tz" step="0.25" value="3">
+          </label>
+          <div class="form-actions">
+            <button type="button" id="cal-go" class="btn primary">Скачать 12 PDF</button>
+          </div>
+        </div>
+        <div id="cal-progress" class="muted"></div>
+      </div>
       <div class="card" id="m-panchanga"><h2>Панчанга на сегодня</h2><div id="m-panchanga-body" class="muted">Нажмите «Найти благоприятное время» — расчёт появится здесь.</div></div>
       <div id="m-result" class="hidden"></div>
 
@@ -359,6 +379,9 @@
 <script src="js/daragan-ask.js"></script>
 <script src="js/causal.js"></script>
 <script src="js/ai-local.js"></script>
+<script src="js/jspdf.umd.min.js"></script>
+<script src="js/daily.js"></script>
+<script src="js/calendar-pdf.js"></script>
 <script src="tools/app-bridge.js"></script>
 <script src="js/app.js"></script>
 <iframe id="print-frame" title="print" style="display:none"></iframe>
