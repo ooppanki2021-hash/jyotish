@@ -211,6 +211,67 @@
     return c;
   }
 
+  /* ---------- памятка: как читать джйотиш-календарь ---------- */
+  function drawInstructionJyotish(CP, ctx, S) {
+    var W = CP.A4W, ML = 7, MT = 6, hh = 17;
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W * S, CP.A4H * S);
+    ctx.fillStyle = '#f5ecd6'; ctx.fillRect(ML * S, MT * S, (W - 2 * ML) * S, hh * S);
+    ctx.strokeStyle = '#8b6214'; ctx.lineWidth = 0.55 * S;
+    ctx.beginPath(); ctx.moveTo(ML * S, (MT + hh) * S); ctx.lineTo((W - ML) * S, (MT + hh) * S); ctx.stroke();
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.font = 'bold ' + (16 * 0.3528 * S).toFixed(2) + 'px sans-serif'; ctx.fillStyle = '#8b6214';
+    ctx.fillText('Как читать этот календарь', (ML + 3) * S, (MT + 7.5) * S);
+    ctx.font = (7.2 * 0.3528 * S).toFixed(2) + 'px sans-serif'; ctx.fillStyle = '#767068';
+    ctx.fillText('Персональный джйотиш-календарь: панчанга и ваша карта (сидерический зодиак).', (ML + 3) * S, (MT + 10.6) * S);
+    ctx.fillText('Один лист = один месяц, время местное. Без санскрита: только русские названия.', (ML + 3) * S, (MT + hh - 2.0) * S);
+    var y = MT + hh + 6, LW = W - 2 * ML - 6;
+    function wrap(c, txt, wmm, sc) {
+      var words = txt.split(/\s+/), lines = [], cur = '';
+      words.forEach(function (wd) {
+        var tr = cur ? cur + ' ' + wd : wd;
+        if (c.measureText(tr).width / sc <= wmm || !cur) cur = tr;
+        else { lines.push(cur); cur = wd; }
+      });
+      if (cur) lines.push(cur);
+      return lines;
+    }
+    function para(title, exColor, example, texts) {
+      ctx.font = 'bold ' + (10 * 0.3528 * S).toFixed(2) + 'px sans-serif'; ctx.fillStyle = '#1e1c1a';
+      ctx.fillText(title, ML * S, y * S); y += 5.2;
+      if (example) {
+        ctx.font = 'bold ' + (7.5 * 0.3528 * S).toFixed(2) + 'px sans-serif'; ctx.fillStyle = exColor;
+        wrap(ctx, example, LW, S).forEach(function (ln) { ctx.fillText(ln, (ML + 3) * S, y * S); y += 3.6; });
+      }
+      ctx.font = (7.5 * 0.3528 * S).toFixed(2) + 'px sans-serif'; ctx.fillStyle = '#1e1c1a';
+      texts.forEach(function (t) {
+        wrap(ctx, t, LW, S).forEach(function (ln) { ctx.fillText(ln, (ML + 3) * S, y * S); y += 3.6; });
+      });
+      y += 3.0;
+    }
+    para('1. Зелёная строка МОЖНО — сферы, благоприятные в этот день:', '#286a30',
+      'МОЖНО: дела и встречи, брак, деньги',
+      ['По панчанге (титхи, день недели, накшатра) и вашей карте эти сферы дня поддержаны: начинайте и ведите дела из списка.']);
+    para('2. Красная строка НЕЛЬЗЯ — сферы под напряжением, плюс предупреждения ⚠:', '#b02e24',
+      'НЕЛЬЗЯ: поездки, деньги  ⚠ солнечное затмение — день тишины',
+      ['Эти сферы дня не поддержаны: новые шаги по ним отложите. Знак ⚠ добавляет события-предупреждения: затмения, Чандраштама (Луна в конфликте с картой), санкранти (Солнце меняет знак). В такие дни важен покой, а не старты.']);
+    para('3. Жёлтая строка КАК ОБЫЧНО — нейтральные сферы:', '#a07800',
+      'КАК ОБЫЧНО: учёба, здоровье',
+      ['Ни поддержки, ни напряжения: дела идут своим чередом, особых мер не нужно.']);
+    para('4. Серая строка — окна дня, одинаковые для всех сфер:', '#767068',
+      'окно удачи 11:07–12:36 · плохое время 16:20–17:50',
+      ['Окно удачи (Абхиджит) — лучший промежуток для любых важных шагов; плохое время (Раху-кала) — не начинайте нового и не подписывайте. Остальные окна дня развернутся в приложении в мухурте.']);
+    para('5. Строка даты: число, день недели, звёзды, лунные сутки:', '#1e1c1a',
+      '16  Пт  ★★★★☆   6-е лунные сутки, Луна растёт',
+      ['Звёзды (1–5) — итог дня: 4–5 — день-помощник, 3 — ровный, 1–2 — день-тишина. Лунные сутки и фаза: растущая Луна — на рост и начало, убывающая — на завершение, уборку, отпускание.']);
+    para('6. Правая половина клетки — линованное поле:', '#1e1c1a', null,
+      ['Для ваших записей: планы, факты, как прошло. Календарь настенный — печатайте и вешайте.']);
+    para('7. Календарь персональный:', '#1e1c1a', null,
+      ['Он посчитан на выбранную карту рождения и город: учитываются тара-бала, Чандраштама, саде-сати, дома Сатурна и Юпитера от вашей Луны и лагны. Для другой карты (близких) выберите её в приложении и соберите отдельный комплект.']);
+    para('8. Связка с мухуртой и календарём Дарагана:', '#1e1c1a', null,
+      ['Этот календарь — общий фон дня по сферам. Точные часы под конкретное дело даёт мухурта (вкладка в приложении), а второй взгляд — настенная мухурта по Дарагану со своей памяткой. Если все три согласны — это самый сильный день для старта.']);
+    return true;
+  }
+
   /* ---------- сборка 12 PDF ---------- */
   function buildYear(params, opts) {
     opts = opts || {};
@@ -226,7 +287,7 @@
     var files = [];
     var JsPDF = (root.jspdf && root.jspdf.jsPDF) || (root.jsPDF) || null;
     months.forEach(function (ym, idx) {
-      if (opts.onProgress) opts.onProgress(idx, months.length, MONTHS[ym[1] - 1] + ' ' + ym[0]);
+      if (opts.onProgress) opts.onProgress(idx, months.length + 1, MONTHS[ym[1] - 1] + ' ' + ym[0]);
       var canvas = makeCanvas(S);
       var ctx = canvas.getContext('2d');
       if (!drawMonth(data, ym[0], ym[1], cfg, ctx, S)) return;
@@ -234,6 +295,12 @@
       pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, A4W, A4H);
       files.push({ name: 'джйотиш-календарь-' + ym[0] + '-' + (ym[1] < 10 ? '0' : '') + ym[1] + '.pdf', pdf: pdf });
     });
+    if (opts.onProgress) opts.onProgress(months.length, months.length + 1, 'как читать');
+    var c2 = makeCanvas(S);
+    drawInstructionJyotish({ A4W: A4W, A4H: A4H }, c2.getContext('2d'), S);
+    var pdf2 = new JsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: true });
+    pdf2.addImage(c2.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, A4W, A4H);
+    files.push({ name: 'джйотиш-календарь-13-как-читать.pdf', pdf: pdf2 });
     return { files: files, meta: data.meta };
   }
 
@@ -260,5 +327,5 @@
     step();
   }
 
-  return { buildYear: buildYear, saveAll: saveAll, drawMonth: drawMonth, DEFAULTS: DEFAULTS, MONTHS: MONTHS, A4W: A4W, A4H: A4H };
+  return { buildYear: buildYear, saveAll: saveAll, drawMonth: drawMonth, drawInstructionJyotish: drawInstructionJyotish, DEFAULTS: DEFAULTS, MONTHS: MONTHS, A4W: A4W, A4H: A4H };
 }));
