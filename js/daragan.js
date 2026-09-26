@@ -35,6 +35,7 @@
     children:{ house:5,  sig:['Jupiter','Sun'],label:'Дети, творчество' },
     realty:  { house:4,  sig:['Moon','Saturn'],label:'Недвижимость, дом, переезд' },
     money:   { house:2,  sig:['Jupiter','Venus'],label:'Деньги, доход' },
+    career:  { house:10, sig:['Saturn','Mercury'],label:'Карьера, работа, статус' },
     travel:  { house:9,  sig:['Jupiter'],    label:'Поездки, учёба, дальние дороги' },
     health:  { house:6,  sig:['Mars','Saturn'],label:'Здоровье, работа, преодоление' },
     social:  { house:3,  sig:['Mercury'],    label:'Встречи, переговоры, общение' },

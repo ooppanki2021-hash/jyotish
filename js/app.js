@@ -1034,7 +1034,7 @@
     var mEngine = ($('m-engine') || {}).value || 'jyotish';
     if (mEngine === 'daragan'){
       if (!state.chart || !state.chart.lagna){ alert('Методу Дарагана нужна ваша карта: рассчитайте её на вкладке «Кто я, мой путь» или выберите сохранённую.'); return; }
-      var THEME_MAP = { general: 'general', business: 'general', marriage: 'love', property: 'realty', travel: 'travel', education: 'travel', finance: 'money', health: 'health' };
+      var THEME_MAP = { general: 'general', business: 'career', marriage: 'love', property: 'realty', travel: 'travel', education: 'travel', finance: 'money', health: 'health' };
       var themeKey = THEME_MAP[activity] || 'general';
       var dd = Daragan.nextThemeDays(state.chart, themeKey, count, 400, 30, function(off){
         var b = Muhurta.dayAt(lat, lon, tz, activity, off, 30);
