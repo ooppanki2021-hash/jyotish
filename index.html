@@ -154,6 +154,13 @@
             <select id="cal-chart" class="c-saved"></select>
             <small>Выберите сохранённую карту; если пусто — заполните данные на вкладке «Кто я, мой путь».</small>
           </label>
+          <label>Логика календаря
+            <select id="cal-engine">
+              <option value="jyotish">Джйотиш (панчанга + ваша карта)</option>
+              <option value="daragan">Дараган (тропический, его методика)</option>
+            </select>
+            <small>Дараган: транзиты, прогрессии и дирекции по сигнификаторам тем, орбисы его курса.</small>
+          </label>
           <label>Начать с месяца
             <input type="month" id="cal-from" value="2026-10">
           </label>
@@ -382,6 +389,7 @@
 <script src="js/jspdf.umd.min.js"></script>
 <script src="js/daily.js"></script>
 <script src="js/calendar-pdf.js"></script>
+<script src="js/calendar-daragan.js"></script>
 <script src="tools/app-bridge.js"></script>
 <script src="js/app.js"></script>
 <iframe id="print-frame" title="print" style="display:none"></iframe>

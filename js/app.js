@@ -1110,11 +1110,20 @@
     calProg('Считаю дни и листы…');
     setTimeout(function(){
       try {
-        var res = CalendarPdf.buildYear({
+        var cparams = {
           by: by, bm: bm, bd: bd, bhh: bhh, bmm: bmm, btz: btz, blat: blat, blon: blon,
           lat: blat, lon: blon, tz: tzCal,
           fromY: fy, fromM: fm, fromD: 1, toY: ey, toM: em, toD: lastDay
-        }, { scale: 5.0, onProgress: function(i, n, label){ calProg('Лист ' + (i + 1) + ' из ' + n + ': ' + label); } });
+        };
+        var engine = ($('cal-engine') || {}).value || 'jyotish';
+        var progFn = { scale: 5.0, onProgress: function(i, n, label){ calProg('Лист ' + (i + 1) + ' из ' + n + ': ' + label); } };
+        var res;
+        if (engine === 'daragan'){
+          progFn.chartFactory = function(p){ return Jyotish.computeChart({ y: p.by, m: p.bm, d: p.bd, hh: p.bhh, mm: p.bmm, tz: p.btz, lat: p.blat, lon: p.blon }); };
+          res = DaraganCal.buildYear(cparams, progFn);
+        } else {
+          res = CalendarPdf.buildYear(cparams, progFn);
+        }
         if (!res.files.length){ calProg('Не удалось построить листы.'); return; }
         calProg('Сохраняю файлы…');
         CalendarPdf.saveAll(res.files, function(i, n, label){ calProg(label + ' (' + i + '/' + n + ')'); });

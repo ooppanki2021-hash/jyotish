@@ -378,5 +378,111 @@
     }
   }
 
-  return { forecast: forecast, THEME: THEME };
+  // --- Посуточный слой методики (для календаря) ---
+  var BEN = ['Jupiter', 'Venus', 'Sun', 'Moon'];
+  var MAL = ['Saturn', 'Mars', 'Pluto'];
+  function natureOf(p){ return BEN.indexOf(p) >= 0 ? 1 : (MAL.indexOf(p) >= 0 ? -1 : 0); }
+  function aspWeight(aspect, nature){
+    // соединение/трин/секстиль — поддержка, квадрат/оппозиция — напряжение
+    var soft = (aspect === 'соединение' || aspect === 'трин' || aspect === 'секстиль');
+    if (nature === 0) return 0;
+    if (soft) return nature > 0 ? (aspect === 'соединение' ? 2 : 1) : (aspect === 'соединение' ? -2 : -1);
+    return nature > 0 ? -1 : -2;
+  }
+  var PHASES = ['новолуние', 'растущий серп', 'первая четверть', 'растущая Луна', 'полнолуние', 'убывающая Луна', 'последняя четверть', 'убывающий серп'];
+  function moonPhaseName(sunLon, moonLon){
+    var e = norm360(moonLon - sunLon);
+    return PHASES[Math.floor(((e + 22.5) % 360) / 45)];
+  }
+
+  /* Оценка темы на дату: транзиты (орбисы курса) + прогрессии + дирекции. */
+  function dailyTheme(nat, themeKey, date){
+    var sig = significators(themeKey, nat);
+    var score = 0, reasons = [], warns = [];
+    var P = ['Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'];
+    var i, j, sp, a;
+    // транзиты медленных планет (как в транзитной части методики)
+    for (i = 0; i < P.length; i++){
+      var pl = tropLon(BODY[P[i]], date);
+      var orb = T_ORB[P[i]] || 1;
+      for (j = 0; j < sig.keys.length; j++){
+        sp = sig.keys[j];
+        a = aspectOf(pl, nat.planets[sp]);
+        if (a.orbAbs <= orb){
+          var w = aspWeight(a.aspect, natureOf(P[i]));
+          if (a.orbAbs > orb * 0.5 && w){ w = w > 0 ? Math.max(1, w - 1) : Math.min(-1, w + 1); }
+          if (w){
+            score += w;
+            var txt = PLANET_RU[P[i]] + ' ' + a.aspect + ' ' + PLANET_RU[sp] + ' (орб ' + a.orbAbs.toFixed(1) + '°)';
+            if (w > 0) reasons.push(txt); else warns.push(txt);
+            if (natureOf(P[i]) < 0 && a.aspect === 'соединение' && a.orbAbs <= 0.5){
+              warns.push('точное соединение ' + PLANET_RU[P[i]] + ' с сигнификатором темы');
+            }
+          }
+        }
+      }
+    }
+    // быстрый триггер: транзитная Луна к сигнификаторам (малый орбис)
+    var ml = tropLon(BODY.Moon, date);
+    for (j = 0; j < sig.keys.length; j++){
+      sp = sig.keys[j];
+      a = aspectOf(ml, nat.planets[sp]);
+      if (a.orbAbs <= 2){
+        var wm = (a.aspect === 'соединение' || a.aspect === 'трин' || a.aspect === 'секстиль') ? 1 : -1;
+        score += wm;
+        var tm = 'Луна ' + a.aspect + ' ' + PLANET_RU[sp] + ' (триггер дня)';
+        if (wm > 0) reasons.push(tm); else warns.push(tm);
+      }
+    }
+    // прогрессии (день за год)
+    var ageYr = (date.getTime() - nat.birth.getTime()) / (365.25 * 86400000);
+    var progDate = new Date(nat.birth.getTime() + ageYr * 86400000);
+    for (i = 0; i < P.length; i++){
+      var plp = tropLon(BODY[P[i]], progDate);
+      var porb = P_ORB[P[i]] || 0.5;
+      for (j = 0; j < sig.keys.length; j++){
+        sp = sig.keys[j];
+        a = aspectOf(plp, nat.planets[sp]);
+        if (a.orbAbs <= porb && a.aspect !== 'секстиль'){
+          var w2 = aspWeight(a.aspect === 'секстиль' ? 'трин' : a.aspect, natureOf(P[i]));
+          if (a.orbAbs > porb * 0.5 && w2){ w2 = w2 > 0 ? Math.max(1, w2 - 1) : Math.min(-1, w2 + 1); }
+          if (w2){
+            score += w2;
+            var t2 = 'прогр. ' + PLANET_RU[P[i]] + ' ' + a.aspect + ' ' + PLANET_RU[sp];
+            if (w2 > 0) reasons.push(t2); else warns.push(t2);
+          }
+        }
+      }
+    }
+    // дирекции (1° = 1 год): Asc, MC, Солнце, Луна
+    var dirs = [['дир. Асц', nat.asc], ['дир. МС', nat.mc], ['дир. Солнце', nat.planets.Sun], ['дир. Луна', nat.planets.Moon]];
+    for (i = 0; i < dirs.length; i++){
+      var dVal = norm360(dirs[i][1] + ageYr);
+      for (j = 0; j < sig.keys.length; j++){
+        sp = sig.keys[j];
+        a = aspectOf(dVal, nat.planets[sp]);
+        if (a.aspect === 'соединение' && a.orbAbs <= 1){
+          score += 1;
+          reasons.push(dirs[i][0] + ' на ' + PLANET_RU[sp]);
+        }
+      }
+    }
+    return { key: themeKey, label: (THEME[themeKey] || THEME.general).label, score: score, reasons: reasons, warns: warns };
+  }
+
+  /* Полный снимок дня по Дарагану. */
+  function daily(chart, date){
+    var nat = natalTrop(chart);
+    var themes = Object.keys(THEME).map(function (k) { return dailyTheme(nat, k, date); });
+    var moonLon = tropLon(BODY.Moon, date);
+    var sunLon = tropLon(BODY.Sun, date);
+    return {
+      themes: themes,
+      moonSign: SIGNS[signLon(moonLon)],
+      moonPhase: moonPhaseName(sunLon, moonLon),
+      total: themes.reduce(function (s, t) { return s + t.score; }, 0)
+    };
+  }
+
+  return { forecast: forecast, THEME: THEME, daily: daily, dailyTheme: dailyTheme, natalTrop: natalTrop };
 });

@@ -116,7 +116,7 @@
       ctx.fillText(stars(d.stars), (ix + dw) * S, (yy + 3.2) * S);
       dw += ctx.measureText(stars(d.stars)).width / S + 2.0;
       setFont(ctx, '', 6.2, S, MUTED);
-      var rt = d.lunarDay + '-е лунные сутки, ' + d.moonPhase;
+      var rt = d.lunarText || (d.lunarDay + '-е лунные сутки, ' + d.moonPhase);
       var rw = ctx.measureText(rt).width / S;
       if (ix + dw + rw < x + cw - pad) ctx.fillText(rt, (x + cw - pad - rw) * S, (yy + 3.2) * S);
       ctx.strokeStyle = HAIRC;
@@ -136,6 +136,7 @@
         else if (e.kind === 'eclipse-lunar') warns.push('лунное затмение — эмоции на пределе');
       });
       if (d.chandrashtama) warns.push('луна в конфликте с вашей картой');
+      (d.warnTexts || []).forEach(function (w) { if (warns.length < 3) warns.push(w); });
       (d.events || []).forEach(function (e) { if (e.kind === 'sankranti') warns.push('солнце меняет знак'); });
       var extras_mid = [];
       (d.events || []).forEach(function (e) {
@@ -154,7 +155,7 @@
         if (extras_mid.length) t2 += '  · ' + extras_mid.slice(0, 1).join('; ');
         lines.push(['mid', t2]);
       }
-      lines.push(['time', 'окно удачи ' + d.abhijit + ' · плохое время ' + d.rahuKaal]);
+      lines.push(['time', d.timeLine || ('окно удачи ' + d.abhijit + ' · плохое время ' + d.rahuKaal)]);
 
       var fsg = cfg.fs_list;
       var laid = [];
