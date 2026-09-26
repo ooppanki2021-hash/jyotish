@@ -1053,10 +1053,17 @@
       if (d.windows.length){
         var bestScore = -99, bestIdx = 0;
         d.windows.forEach(function(w, i){ if (w.score > bestScore){ bestScore = w.score; bestIdx = i; } });
-        winHtml = d.windows.map(function(w, wi){
+        var allWin = d.windows.map(function(w, wi){
           return '<div class="win' + (wi === bestIdx ? ' best' : '') + '">' + (wi === bestIdx ? '<span class="best-tag">лучшее окно</span>' : '') + '<b>' + fmtLocal(w.start, tz) + ' – ' + fmtLocal(w.end, tz) + '</b>' +
             '<span class="muted"> · ' + esc(w.tithi) + ' · ' + esc(w.nak) + ' · балл ' + w.score + '</span></div>';
         }).join('');
+        if (personalMode){
+          var bw = d.windows[bestIdx];
+          winHtml = '<div class="win best"><span class="best-tag">лучшее окно</span><b>' + fmtLocal(bw.start, tz) + ' – ' + fmtLocal(bw.end, tz) + '</b><span class="muted"> · начните дело в этот промежуток</span></div>' +
+            (d.windows.length > 1 ? '<details class="fs-tech"><summary class="muted">Все окна дня (' + d.windows.length + ')</summary>' + allWin + '</details>' : '');
+        } else {
+          winHtml = allWin;
+        }
       } else {
         winHtml = '<div class="muted">В этот день благоприятных окон не найдено.</div>';
       }
@@ -1109,6 +1116,18 @@
     $('btn-print').addEventListener('click', onPrint);
     $('btn-save').addEventListener('click', onSave);
     $('m-go').addEventListener('click', onMuhurta);
+    // авто-загрузка личной карты из сохранённых, чтобы мухурта сразу была личной
+    (function autoChart(){
+      var list = loadSaved();
+      if (!list.length) return;
+      var r = list[0];
+      var dt = String(r.date || '').split('-'), tm = String(r.time || '00:00').split(':');
+      if (dt.length < 3 || !r.lat || !r.lon) return;
+      try {
+        state.chart = Jyotish.computeChart({ y: +dt[0], m: +dt[1], d: +dt[2], hh: +(tm[0] || 0), mm: +(tm[1] || 0), tz: +r.tz || 0, lat: +r.lat, lon: +r.lon });
+        state.personName = r.name || '';
+      } catch (e) {}
+    })();
     // сохранённые карты
     refreshSavedSelects();
     $('btn-save-chart').addEventListener('click', onSaveChart);
