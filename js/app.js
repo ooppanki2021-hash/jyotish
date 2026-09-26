@@ -1039,12 +1039,14 @@
       var pd = personalForDay(state.chart, activity, d.date);
       var badge = '<span class="pw-badge">' + esc(pd.label) + '</span>';
       var why = pd.reasons.length ? '<div class="muted pw-reasons">' + esc(pd.reasons.join('; ')) + '</div>' : '';
+      var clarify = pd.score < 0 ? '<div class="muted pw-clarify">🔴 — личная пометка по вашей карте: общий календарь (окна выше) благоприятен, но транзит Сатурна/Юпитера даёт напряжённый фон. Если дело можно перенести — выберите дату с 🟢.</div>' : '';
       var offBadge = '<span class="in-days">' + (d.offset === 0 ? 'сегодня' : 'через ' + d.offset + ' дн') + '</span>';
-      return '<div class="daycard' + (d.offset === 0 ? ' today' : '') + '"><div class="dayhead"><b>' + fmtLocalDay(d.date, tz) + '</b> ' + offBadge + ' ' + badge + ' <span class="muted">' + esc(d.varaName) + ' · ' + esc(d.tithi) + ' · ' + esc(d.nakshatra) + '</span></div>' + why + winHtml + '</div>';
+      return '<div class="daycard' + (d.offset === 0 ? ' today' : '') + '"><div class="dayhead"><b>' + fmtLocalDay(d.date, tz) + '</b> ' + offBadge + ' ' + badge + why + clarify + ' <span class="muted">' + esc(d.varaName) + ' · ' + esc(d.tithi) + ' · ' + esc(d.nakshatra) + '</span></div>' + winHtml + '</div>';
     }).join('');
     var personal = r.days.map(function(d){return {d:d,p:personalForDay(state.chart,activity,d.date)};}).filter(function(x){return x.p.score>=2;});
     var personalText = state.chart ? '<div class="pw-summary"><b>Личная проверка по вашей карте:</b> общий календарь дополнен транзитами Юпитера и Сатурна. Ближайший лично благоприятный день: ' + (personal.length ? fmtLocalDay(personal[0].d.date,tz) : 'в выбранном горизонте не найден') + '.</div>' : '<div class="pw-summary">Рассчитайте натальную карту, чтобы добавить персональную проверку дней.</div>';
-    el.innerHTML = '<div class="card"><h2>Ближайшие благоприятные даты: ' + esc(r.activity) + '</h2>' + personalText + daysHtml +
+    el.innerHTML = '<div class="card"><h2>Ближайшие благоприятные даты: ' + esc(r.activity) + '</h2>' + personalText +
+      '<p class="muted pw-legend">Метки у дат — личная проверка по вашей карте: 🟢 день подходит и общему календарю, и карте; 🟡 нейтрально; 🔴 общий календарь благоприятен, но по вашей карте день напряжён (Сатурн/Юпитер) — берите лучшее окно с запасом прочности или выберите зелёную дату.</p>' + daysHtml +
       '<p class="muted" style="margin-top:10px">Показаны ближайшие благоприятные даты (до ' + count + ' шт., горизонт поиска — до 400 дней). Поиск от восхода до захода с шагом 30 минут. Исключены Раху-кала, Ямаганда и Гулика. Порог «благоприятно» — хорошие титхи + день недели + накшатра.</p></div>';
     el.scrollIntoView({ behavior:'smooth' });
   }
