@@ -90,8 +90,10 @@
       var ch = rowh - cfg.rowgap;
       var ix = x + pad, iw = cw - 2 * pad;
 
+      var clGood = false, clBad = false;
+      if (d.customLines){ d.customLines.forEach(function(cl){ if (cl.kind === 'good') clGood = true; if (cl.kind === 'bad') clBad = true; }); }
       if (cfg.tint) {
-        ctx.fillStyle = d.stars >= 4 ? GOODBG : (d.stars <= 2 ? BADBG : MIDBG);
+        ctx.fillStyle = d.customLines ? (clGood ? GOODBG : (clBad ? BADBG : MIDBG)) : (d.stars >= 4 ? GOODBG : (d.stars <= 2 ? BADBG : MIDBG));
         ctx.fillRect(x * S, yy * S, cw * S, ch * S);
       }
       ctx.strokeStyle = LINEC; ctx.lineWidth = 0.25 * S;
@@ -145,18 +147,22 @@
 
       var LB = d.labels || { good: 'МОЖНО', bad: 'НЕЛЬЗЯ', mid: 'КАК ОБЫЧНО' };
       var lines = [];
-      if (good.length) lines.push(['good', LB.good + ': ' + good.join(', ')]);
-      if (bad.length || warns.length) {
+      if (d.customLines){
+        d.customLines.forEach(function(cl){ lines.push([cl.kind, cl.text]); });
+        lines.push(['time', d.timeLine || '']);
+      }
+      else if (good.length) lines.push(['good', LB.good + ': ' + good.join(', ')]);
+      if (!d.customLines && (bad.length || warns.length)) {
         var t = bad.length ? (LB.bad + ': ' + bad.join(', ')) : (LB.bad + ': ничего важного');
         if (warns.length) t += '  ⚠ ' + warns.slice(0, 2).join('; ');
         lines.push(['bad', t]);
       }
-      if (mid.length || extras_mid.length) {
+      if (!d.customLines && (mid.length || extras_mid.length)) {
         var t2 = mid.length ? (LB.mid + ': ' + mid.join(', ')) : (LB.mid + ': всё остальное');
         if (extras_mid.length) t2 += '  · ' + extras_mid.slice(0, 1).join('; ');
         lines.push(['mid', t2]);
       }
-      lines.push(['time', d.timeLine || ('окно удачи ' + d.abhijit + ' · плохое время ' + d.rahuKaal)]);
+      if (!d.customLines) lines.push(['time', d.timeLine || ('окно удачи ' + d.abhijit + ' · плохое время ' + d.rahuKaal)]);
 
       var fsg = cfg.fs_list;
       var laid = [];
