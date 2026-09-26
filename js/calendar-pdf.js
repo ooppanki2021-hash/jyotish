@@ -127,7 +127,7 @@
       // слева: цветной список сфер
       var lw = iw * cfg.left_frac;
       var good = [], bad = [], mid = [];
-      d.spheres.forEach(function (sp) {
+      (d.spheres || []).forEach(function (sp) {
         if (sp.cls === 'good') good.push(sp.name);
         else if (sp.cls === 'bad') bad.push(sp.name);
         else mid.push(sp.name);
