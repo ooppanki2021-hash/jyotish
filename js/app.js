@@ -1031,7 +1031,33 @@
 
     var r = null;
     var personalMode = false;
-    if (state.chart && state.chart.lagna){
+    var mEngine = ($('m-engine') || {}).value || 'jyotish';
+    if (mEngine === 'daragan'){
+      if (!state.chart || !state.chart.lagna){ alert('Методу Дарагана нужна ваша карта: рассчитайте её на вкладке «Кто я, мой путь» или выберите сохранённую.'); return; }
+      var THEME_MAP = { general: 'general', business: 'career', marriage: 'love', property: 'realty', travel: 'travel', education: 'travel', finance: 'money', health: 'health' };
+      var themeKey = THEME_MAP[activity] || 'general';
+      var dd = Daragan.nextThemeDays(state.chart, themeKey, count, 400, 30, function(off){
+        var b = Muhurta.dayAt(lat, lon, tz, activity, off, 30);
+        return b ? { sunrise: b.sunrise.getTime(), sunset: b.sunset.getTime(), base: b } : null;
+      });
+      var dDays = dd.map(function(x){
+        return {
+          date: x.base.date, offset: x.offset,
+          varaName: x.base.varaName, tithi: x.base.tithi, nakshatra: x.base.nakshatra,
+          windows: x.windows,
+          personal: { score: 2, label: '🟢 по Дарагану: поддержка темы', reasons: x.theme.reasons.slice(0, 2) }
+        };
+      });
+      r = { activity: (Muhurta.ACTIVITIES[activity] || Muhurta.ACTIVITIES.general).label + ' · по Дарагану', days: dDays };
+      personalMode = true;
+      var el0 = $('m-result');
+      el0.classList.remove('hidden');
+      if (!dDays.length){
+        el0.innerHTML = '<div class="card"><h2>По Дарагану: ближайшее окно темы не найдено</h2><p class="muted">За 400 дней не нашлось дня с поддержкой сигнификаторов темы «' + esc((Muhurta.ACTIVITIES[activity] || {}).label || activity) + '». Попробуйте панчанга-метод или другую тему.</p></div>';
+        return;
+      }
+    }
+    if (state.chart && state.chart.lagna && mEngine !== 'daragan'){
       var picked = [];
       for (var off = 0; off < 400 && picked.length < count; off++){
         var day = Muhurta.dayAt(lat, lon, tz, activity, off, 30);
@@ -1077,7 +1103,7 @@
     var personal = r.days.map(function(d){return {d:d,p:personalForDay(state.chart,activity,d.date)};}).filter(function(x){return x.p.score>=2;});
     var personalText = state.chart ? '<div class="pw-summary"><b>Личная проверка по вашей карте:</b> транзитная Луна (ежедневно), Юпитер и Сатурн относительно домов дела. ' + (personalMode ? 'В списке только дни с зелёной меткой.' : 'Зелёных дней с окнами в горизонте 400 дней не нашлось, показан общий календарь.') + '</div>' : '<div class="pw-summary">Рассчитайте натальную карту, чтобы видеть только ваши личные благоприятные даты.</div>';
     el.innerHTML = '<div class="card"><h2>Ближайшие благоприятные даты: ' + esc(r.activity) + '</h2>' + personalText +
-      '<p class="muted pw-legend">' + (personalMode ? 'Показаны ближайшие даты с окнами, которые лично для вас 🟢 (Луна, Юпитер и Сатурн к вашей карте). ' : (state.chart && state.chart.lagna ? 'За 400 дней лично-зелёных дат с окнами не нашлось — показан общий календарь. ' : 'Рассчитайте натальную карту — и список станет личным (только ваши 🟢 даты). Пока показан общий календарь. ')) + 'Метки у дат — личная проверка по вашей карте: 🟢 день подходит и общему календарю, и карте; 🟡 нейтрально; 🔴 общий календарь благоприятен, но по вашей карте день напряжён (Сатурн/Юпитер) — берите лучшее окно с запасом прочности или выберите зелёную дату.</p>' + daysHtml +
+      '<p class="muted pw-legend">' + (personalMode ? ((($('m-engine')||{}).value==='daragan') ? 'Метод Дарагана: дни и часы выбраны по аспектам к сигнификаторам темы (транзиты, прогрессии, Луна дня); 🟢 = поддержка темы. ' : 'Показаны ближайшие даты с окнами, которые лично для вас 🟢 (Луна, Юпитер и Сатурн к вашей карте). ') : (state.chart && state.chart.lagna ? 'За 400 дней лично-зелёных дат с окнами не нашлось — показан общий календарь. ' : 'Рассчитайте натальную карту — и список станет личным (только ваши 🟢 даты). Пока показан общий календарь. ')) + 'Метки у дат — личная проверка по вашей карте: 🟢 день подходит и общему календарю, и карте; 🟡 нейтрально; 🔴 общий календарь благоприятен, но по вашей карте день напряжён (Сатурн/Юпитер) — берите лучшее окно с запасом прочности или выберите зелёную дату.</p>' + daysHtml +
       '<p class="muted" style="margin-top:10px">Показаны ближайшие благоприятные даты (до ' + count + ' шт., горизонт поиска — до 400 дней). Поиск от восхода до захода с шагом 30 минут. Исключены Раху-кала, Ямаганда и Гулика. Порог «благоприятно» — хорошие титхи + день недели + накшатра.</p></div>';
     el.scrollIntoView({ behavior:'smooth' });
   }

@@ -506,5 +506,53 @@
     };
   }
 
-  return { forecast: forecast, THEME: THEME, daily: daily, dailyTheme: dailyTheme, natalTrop: natalTrop };
+  /* Окна дня по теме: транзитная Луна в мягком аспекте к сигнификаторам (орбис 1.5°). */
+  function themeWindows(nat, themeKey, sunriseMs, sunsetMs, stepMin){
+    var sig = significators(themeKey, nat);
+    stepMin = stepMin || 30;
+    var wins = [], cur = null;
+    var t = sunriseMs;
+    while (t < sunsetMs){
+      var ml = tropLon(BODY.Moon, new Date(t));
+      var best = null;
+      for (var j = 0; j < sig.keys.length; j++){
+        var sp = sig.keys[j];
+        var a = aspectOf(ml, nat.planets[sp]);
+        var soft = (a.aspect === 'соединение' || a.aspect === 'трин' || a.aspect === 'секстиль');
+        if (soft && a.orbAbs <= 1.5){
+          if (!best || a.orbAbs < best.orbAbs) best = { sp: sp, aspect: a.aspect, orbAbs: a.orbAbs };
+        }
+      }
+      if (best){
+        if (!cur) cur = { start: t, end: t, score: 2, _orb: best.orbAbs, tithi: 'Луна — поддержка', nak: best.aspect + ' ' + PLANET_RU[best.sp] };
+        else { cur.end = t; if (best.orbAbs < cur._orb){ cur._orb = best.orbAbs; cur.nak = best.aspect + ' ' + PLANET_RU[best.sp]; } }
+      } else if (cur){ wins.push(cur); cur = null; }
+      t += stepMin * 60000;
+    }
+    if (cur) wins.push(cur);
+    return wins;
+  }
+
+  /* Ближайшие благоприятные дни темы по Дарагану. dayInfo(off) -> {sunrise,sunset} (мс UTC). */
+  function nextThemeDays(chart, themeKey, count, maxDays, stepMin, dayInfo){
+    var nat = natalTrop(chart);
+    count = count || 3; maxDays = maxDays || 400; stepMin = stepMin || 30;
+    var out = [];
+    for (var off = 0; off < maxDays && out.length < count; off++){
+      var di = dayInfo(off);
+      if (!di || !di.sunrise || !di.sunset) continue;
+      noon = new Date((di.sunrise + di.sunset) / 2);
+      var t = dailyTheme(nat, themeKey, noon);
+      var wins = themeWindows(nat, themeKey, di.sunrise, di.sunset, stepMin);
+      var eligible = (t.score >= 2) || (t.score >= 1 && wins.length >= 1);
+      if (!eligible) continue;
+      if (!wins.length){
+        wins = [{ start: di.sunrise, end: di.sunset, score: t.score, tithi: 'весь день', nak: 'поддержка по аспектам дня' }];
+      }
+      out.push({ offset: off, date: noon, theme: t, windows: wins, base: di.base || null });
+    }
+    return out;
+  }
+
+  return { forecast: forecast, THEME: THEME, daily: daily, dailyTheme: dailyTheme, natalTrop: natalTrop, themeWindows: themeWindows, nextThemeDays: nextThemeDays };
 });
