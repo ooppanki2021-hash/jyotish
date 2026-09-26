@@ -454,6 +454,7 @@
         }
       }
     }
+    var P2 = P, progDate2 = progDate;
     // дирекции (1° = 1 год): Asc, MC, Солнце, Луна
     var dirs = [['дир. Асц', nat.asc], ['дир. МС', nat.mc], ['дир. Солнце', nat.planets.Sun], ['дир. Луна', nat.planets.Moon]];
     for (i = 0; i < dirs.length; i++){
@@ -467,7 +468,28 @@
         }
       }
     }
-    return { key: themeKey, label: (THEME[themeKey] || THEME.general).label, score: score, reasons: reasons, warns: warns };
+    // периодный фон темы: медленные транзиты и прогрессии в полном орбисе (меняется месяцами)
+    var period = 0;
+    var SLOW = ['Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'];
+    for (i = 0; i < SLOW.length; i++){
+      var spl = tropLon(BODY[SLOW[i]], date);
+      var sorb = T_ORB[SLOW[i]] || 1;
+      for (j = 0; j < sig.keys.length; j++){
+        sp = sig.keys[j];
+        a = aspectOf(spl, nat.planets[sp]);
+        if (a.orbAbs <= sorb) period += aspWeight(a.aspect, natureOf(SLOW[i]));
+      }
+    }
+    for (i = 0; i < P2.length; i++){
+      var plp2 = tropLon(BODY[P2[i]], progDate2);
+      var porb2 = P_ORB[P2[i]] || 0.5;
+      for (j = 0; j < sig.keys.length; j++){
+        sp = sig.keys[j];
+        a = aspectOf(plp2, nat.planets[sp]);
+        if (a.orbAbs <= porb2 && a.aspect !== 'секстиль') period += aspWeight(a.aspect, natureOf(P2[i]));
+      }
+    }
+    return { key: themeKey, label: (THEME[themeKey] || THEME.general).label, score: score, reasons: reasons, warns: warns, period: period };
   }
 
   /* Полный снимок дня по Дарагану. */

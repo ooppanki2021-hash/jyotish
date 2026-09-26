@@ -40,13 +40,19 @@
       var spheres = [];
       var warnTexts = [];
       var reasonsTop = [];
+      var periodSum = 0;
       SPHERE_ORDER.forEach(function (k) {
         var t = null;
         for (var i = 0; i < snap.themes.length; i++) if (snap.themes[i].key === k) t = snap.themes[i];
         if (!t) return;
+        periodSum += (t.period || 0);
         var cls = t.score >= 2 ? 'good' : (t.score <= -2 ? 'bad' : 'mid');
+        if (cls === 'bad' && (t.period || 0) >= 1){
+          cls = 'mid';
+          if (warnTexts.length < 3) warnTexts.push(t.warns[0] ? (t.warns[0] + ' — осторожность, не запрет: период темы благоприятен') : 'осторожность, не запрет: период темы благоприятен');
+        }
         spheres.push({ k: k, name: SPHERE_NAME[k], score: t.score, cls: cls });
-        t.warns.slice(0, 1).forEach(function (w) { if (warnTexts.length < 3) warnTexts.push(w); });
+        t.warns.slice(0, 1).forEach(function (w) { if (warnTexts.length < 3 && cls === 'bad') warnTexts.push(w); });
         if (t.score >= 2 && reasonsTop.length < 2) reasonsTop.push(t.label + ': ' + (t.reasons[0] || 'поддержка'));
       });
       var uniqW = [];
@@ -60,7 +66,8 @@
         date: y + '-' + (m < 10 ? '0' : '') + m + '-' + (d < 10 ? '0' : '') + d,
         y: y, m: m, d: d,
         vara: ld.getUTCDay(),
-        stars: starsOf(snap.total),
+        stars: starsOf(snap.total + Math.round(periodSum / 6)),
+        labels: { good: 'МОЖНО НАЧИНАТЬ', bad: 'НЕ НАЧИНАЙТЕ НОВОЕ (продолжение и рутина — можно)', mid: 'КАК ОБЫЧНО' },
         spheres: spheres,
         lunarText: 'Луна: ' + snap.moonSign + ' · ' + snap.moonPhase,
         timeLine: timeLine,

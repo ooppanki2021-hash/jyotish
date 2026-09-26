@@ -143,15 +143,16 @@
         if (e.kind === 'dasha-ad' || e.kind === 'dasha-md') extras_mid.push(String(e.short || e.text).toLowerCase());
       });
 
+      var LB = d.labels || { good: 'МОЖНО', bad: 'НЕЛЬЗЯ', mid: 'КАК ОБЫЧНО' };
       var lines = [];
-      if (good.length) lines.push(['good', 'МОЖНО: ' + good.join(', ')]);
+      if (good.length) lines.push(['good', LB.good + ': ' + good.join(', ')]);
       if (bad.length || warns.length) {
-        var t = bad.length ? ('НЕЛЬЗЯ: ' + bad.join(', ')) : 'НЕЛЬЗЯ: ничего важного';
+        var t = bad.length ? (LB.bad + ': ' + bad.join(', ')) : (LB.bad + ': ничего важного');
         if (warns.length) t += '  ⚠ ' + warns.slice(0, 2).join('; ');
         lines.push(['bad', t]);
       }
       if (mid.length || extras_mid.length) {
-        var t2 = mid.length ? ('КАК ОБЫЧНО: ' + mid.join(', ')) : 'КАК ОБЫЧНО: всё остальное';
+        var t2 = mid.length ? (LB.mid + ': ' + mid.join(', ')) : (LB.mid + ': всё остальное');
         if (extras_mid.length) t2 += '  · ' + extras_mid.slice(0, 1).join('; ');
         lines.push(['mid', t2]);
       }
