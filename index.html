@@ -182,6 +182,17 @@
       </div>
       <div class="card" id="m-panchanga"><h2>Панчанга на сегодня</h2><div id="m-panchanga-body" class="muted">Нажмите «Найти благоприятное время» — расчёт появится здесь.</div></div>
       <div id="m-result" class="hidden"></div>
+      <div class="card" id="m-feed-card">
+        <h2>По дням: что благоприятно</h2>
+        <p class="muted" style="margin:4px 0 8px">Личная лента: зелёным — ваши темы с лучшим окном дня, красным — что лучше не начинать. Нажмите на строку дня, чтобы раскрыть окна и причины.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <button type="button" id="mf-today" class="btn primary">От сегодня, 30 дней</button>
+          <button type="button" id="mf-monthbtn" class="btn">Месяц</button>
+          <input type="month" id="mf-month" class="hidden">
+          <button type="button" id="mf-go" class="btn">Показать по дням</button>
+        </div>
+        <div id="m-feed" class="muted" style="margin-top:8px">Нажмите «Показать по дням».</div>
+      </div>
 
       <details class="fs-tech">
         <summary>🔍 Технические детали: таблицы периодов, транзитов и годового расчёта</summary>

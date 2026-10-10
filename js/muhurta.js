@@ -156,6 +156,7 @@
       y: dy, m: dm, d: dday,
       vara: vara, varaName: VARAS[vara],
       tithi: tiDay.name + ' (' + tiDay.paksha + ')',
+      tithiNum: tiDay.num,
       nakshatra: NAK[nakshatraAt(rs.sunrise)],
       windows: windows,
       sunrise: rs.sunrise, sunset: rs.sunset, kalas: kalas

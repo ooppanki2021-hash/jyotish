@@ -1110,6 +1110,87 @@
 
   // ---------- Календарь на год (12 PDF) ----------
   function calProg(t){ var el = $('cal-progress'); if (el) el.textContent = t || ''; }
+  // ---------- Лента мухурты «по дням» ----------
+  var FEED_SHORT = { general:'важные дела', business:'бизнес', finance:'деньги', marriage:'брак',
+    property:'недвижимость', travel:'поездки', education:'учёба', health:'здоровье' };
+  var FEED_ORDER = ['general','business','finance','marriage','property','travel','education','health'];
+  var FEED_WD = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+  var FEED_MON = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+  function feedFmtT(ms, tz){ var d = new Date(ms + tz*3600000); var p=function(n){return (n<10?'0':'')+n;}; return p(d.getUTCHours())+':'+p(d.getUTCMinutes()); }
+  function feedDays(mode){
+    var tz = parseFloat(($('m-tz')||{}).value) || 0;
+    var local = new Date(Date.now() + tz*3600000);
+    var ty = local.getUTCFullYear(), tm = local.getUTCMonth()+1, td = local.getUTCDate();
+    var out = [];
+    if (mode === 'month'){
+      var mv = String((($('mf-month')||{}).value)||'').split('-');
+      var y = +mv[0], m = +mv[1];
+      if (!y || !m){ y = ty; m = tm; }
+      var last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+      var base = Date.UTC(ty, tm-1, td);
+      for (var d = 1; d <= last; d++) out.push({ y:y, m:m, d:d, off: Math.round((Date.UTC(y, m-1, d) - base)/86400000) });
+    } else {
+      for (var i = 0; i < 30; i++){
+        var dl = new Date(Date.UTC(ty, tm-1, td + i));
+        out.push({ y: dl.getUTCFullYear(), m: dl.getUTCMonth()+1, d: dl.getUTCDate(), off: i });
+      }
+    }
+    return out;
+  }
+  function buildFeed(){
+    var el = $('m-feed'); if (!el) return;
+    if (!state.chart){ el.innerHTML = '<span class="muted">Сначала выберите сохранённую карту или заполните данные рождения — лента считается лично под вас.</span>'; return; }
+    var lat = parseFloat($('m-lat').value), lon = parseFloat($('m-lon').value), tz = parseFloat($('m-tz').value);
+    var mode = state.feedMode || 'today';
+    var days = feedDays(mode);
+    var html = '';
+    days.forEach(function(dd, i){
+      var greens = [], reds = [], lunar = '';
+      FEED_ORDER.forEach(function(k){
+        var day = Muhurta.dayAt(lat, lon, tz, k, dd.off, 30);
+        if (!day) return;
+        if (!lunar && day.tithiNum){
+          var n = day.tithiNum, ld = n <= 15 ? n : n - 15;
+          lunar = ld + '-е лунные сутки, ' + (n === 15 ? 'полнолуние' : (n === 30 ? 'новолуние' : (n <= 15 ? 'Луна растёт' : 'Луна убывает')));
+        }
+        var pers = personalForDay(state.chart, k, new Date(dd.y, dd.m-1, dd.d, 12));
+        if (day.windows.length && pers.score >= 2){
+          var w = day.windows.slice().sort(function(a,b){ return (b.score - a.score) || ((b.end - b.start) - (a.end - a.start)); })[0];
+          greens.push({ label: FEED_SHORT[k], ws: feedFmtT(w.start, tz), we: feedFmtT(w.end, tz), reasons: pers.reasons.concat(w.reasons || []) });
+        } else if (pers.score <= -2){
+          reds.push({ label: FEED_SHORT[k], reasons: pers.reasons });
+        }
+      });
+      var wd = FEED_WD[new Date(Date.UTC(dd.y, dd.m-1, dd.d)).getUTCDay()];
+      var isToday = dd.off === 0;
+      var h = '<div class="feed-row' + (isToday ? ' today' : '') + '" data-fi="' + i + '" tabindex="0" role="button" aria-expanded="false">';
+      h += '<div class="feed-head"><b>' + (isToday ? 'Сегодня, ' : '') + dd.d + ' ' + FEED_MON[dd.m-1] + ', ' + wd + '</b> <span class="fm">' + lunar + '</span></div>';
+      if (greens.length) h += '<div class="fg">благоприятно: ' + greens.map(function(g){ return g.label + ' ' + g.ws + '–' + g.we; }).join('; ') + '</div>';
+      else h += '<div class="fm">особых окон нет — день как обычно</div>';
+      if (reds.length) h += '<div class="fr">не начинайте новое: ' + reds.map(function(r){ return r.label; }).join(', ') + '</div>';
+      h += '<div class="feed-det hidden">';
+      greens.forEach(function(g){ h += '<div>• ' + g.label + ': окно ' + g.ws + '–' + g.we + ' — ' + esc(g.reasons.join(', ')) + '</div>'; });
+      reds.forEach(function(r){ h += '<div>• ' + r.label + ': ' + esc(r.reasons.join(', ')) + '</div>'; });
+      if (!greens.length && !reds.length) h += '<div>Ровный день: ни сильной поддержки, ни напряжения — дела идут своим чередом.</div>';
+      h += '</div></div>';
+      html += h;
+    });
+    el.innerHTML = html;
+    Array.prototype.forEach.call(el.querySelectorAll('.feed-row'), function(row){
+      function toggle(){ var det = row.querySelector('.feed-det'); var open = det.classList.toggle('hidden'); row.setAttribute('aria-expanded', open ? 'false' : 'true'); }
+      row.addEventListener('click', toggle);
+      row.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggle(); } });
+    });
+  }
+  function feedSetMode(mode){
+    state.feedMode = mode;
+    var b1 = $('mf-today'), b2 = $('mf-monthbtn'), mi = $('mf-month');
+    if (b1) b1.classList.toggle('primary', mode === 'today');
+    if (b2) b2.classList.toggle('primary', mode === 'month');
+    if (mi){ mi.classList.toggle('hidden', mode !== 'month'); if (mode === 'month' && !mi.value){ var tz = parseFloat(($('m-tz')||{}).value)||0; var l = new Date(Date.now()+tz*3600000); mi.value = l.getUTCFullYear() + '-' + ('0'+(l.getUTCMonth()+1)).slice(-2); } }
+    buildFeed();
+  }
+
   function onCalendarPdf(){
     var list = loadSaved();
     var sel = $('cal-chart');
@@ -1191,6 +1272,10 @@
     $('btn-print').addEventListener('click', onPrint);
     $('btn-save').addEventListener('click', onSave);
     $('m-go').addEventListener('click', onMuhurta);
+    if ($('mf-go')) $('mf-go').addEventListener('click', buildFeed);
+    if ($('mf-today')) $('mf-today').addEventListener('click', function(){ feedSetMode('today'); });
+    if ($('mf-monthbtn')) $('mf-monthbtn').addEventListener('click', function(){ feedSetMode('month'); });
+    if ($('mf-month')) $('mf-month').addEventListener('change', function(){ state.feedMode = 'month'; buildFeed(); });
     if ($('cal-go')){
       $('cal-go').addEventListener('click', onCalendarPdf);
       var cf = $('cal-from');

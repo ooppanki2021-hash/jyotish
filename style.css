@@ -364,3 +364,12 @@ table.mtable th{background:var(--gold-soft);font-weight:600}
 .best-tag{position:absolute;top:-10px;right:8px;background:#2e7d32;color:#fff;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;}
 [data-theme="dark"] .in-days{background:#4e342e;color:#ffcc80;}
 [data-theme="dark"] .win.best{background:#1b3320;border-color:#66bb6a;}
+
+/* Лента мухурты «по дням» */
+.feed-row{border:1px solid var(--line,#e2ddd2);border-radius:10px;padding:8px 10px;margin:6px 0;cursor:pointer;background:var(--card,#fff)}
+.feed-row.today{outline:2px solid #d9a419}
+.feed-head b{font-size:14px}
+.fg{color:#286a30;margin:2px 0}
+.fr{color:#b02e24;margin:2px 0}
+.fm{color:#767068;font-size:12.5px}
+.feed-det{margin-top:6px;font-size:13px;color:var(--ink,#1e1c1a)}
