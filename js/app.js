@@ -443,6 +443,14 @@
       return '<tr'+(isCur?' class="current"':'')+'><td>'+esc(a.planet)+'</td><td>'+fmtDate(a.start)+'</td><td>'+fmtDate(a.end)+'</td></tr>';
     }).join('');
     $('dasha-current').innerHTML += '<p class="muted" style="margin-top:12px">Под-периоды текущей махадаши ('+esc(cur.planet)+'):</p><table><thead><tr><th>Антарадаша</th><th>Начало</th><th>Конец</th></tr></thead><tbody>'+antRows+'</tbody></table>';
+    var ex1 = $('ex-dasha-cur');
+    if (ex1) ex1.innerHTML = pAboutPlanet(cur.planet, 'Махадаша') + (chart.currentAntar ? pAboutPlanet(chart.currentAntar.planet, 'Подпериод') : '') + 'Складывайте две темы: дела подпериода идут внутри темы периода.';
+    var ex2 = $('ex-dasha');
+    if (ex2){
+      var mi = chart.mahadasha.map(function(m){return m.planet;}).indexOf(cur.planet);
+      var nx = chart.mahadasha[mi+1];
+      ex2.innerHTML = 'Сейчас идёт ' + esc(cur.planet) + ' — конец ' + fmtDate(cur.end) + (nx ? '; следом ' + esc(nx.planet) + ' с ' + fmtDate(nx.start) + ' по ' + fmtDate(nx.end) : '') + '. ' + pAboutPlanet(cur.planet, 'Тема текущего большого периода');
+    }
   }
 
   function renderVarshaphal(chart){
@@ -460,6 +468,14 @@
         '<p><b>Управитель года:</b> ' + esc(vf.yearLord) + ' — ' + esc(vf.yearLordTheme) + '.</p>' +
         '<p class="muted" style="margin-top:8px">Планеты в карте года: ' + planets + '.</p>' +
         '<p class="muted">Ключевые транзиты года: Сатурн в ' + esc(vf.transits.Saturn.sign) + ', Юпитер в ' + esc(vf.transits.Jupiter.sign) + ', Раху в ' + esc(vf.transits.Rahu.sign) + '.</p>';
+      try {
+        var vf2 = Varshaphal.yearForecast(chart, chart.lat, chart.lon, new Date(Date.now() + 330*86400000));
+        if (vf2 && vf2.solarReturnDate){
+          el.innerHTML += '<p><b>Год длится:</b> с ' + fmtDate(vf.solarReturnDate) + ' по ' + fmtDate(vf2.solarReturnDate) + ' (следующее солнечное возвращение).</p>';
+          var exv = $('ex-varshaphal');
+          if (exv) exv.innerHTML = 'Ваш текущий годовой сюжет: с ' + fmtDate(vf.solarReturnDate) + ' по ' + fmtDate(vf2.solarReturnDate) + '. Управитель года — ' + esc(vf.yearLord) + ' (' + esc(vf.yearLordTheme) + '), точка внимания (мунтха) в знаке ' + esc(vf.muntha) + ' — ' + esc(vf.munthaTheme) + '. Внутри этого окна годовой темы работают обычные инструменты: периоды, транзиты и мухурта.';
+        }
+      } catch(e){}
     } catch(e){ el.innerHTML = '<span class="muted">Ошибка расчёта годового прогноза.</span>'; }
   }
 
@@ -478,6 +494,7 @@
     $('transits').innerHTML = '<table><thead><tr><th>Планета</th><th>Знак</th><th>Градус</th><th>Дом от Лагны</th></tr></thead><tbody>'+items+'</tbody></table>' +
       '<div class="transit-notes">' + interp + '</div>' +
       '<p class="muted" style="margin-top:10px">Транзиты считаются на текущую дату от места вашего рождения.</p>';
+    renderTransitPeriods(chart);
   }
 
   function renderForecastStory(chart){
@@ -1258,6 +1275,87 @@
       txt += 'Складывайте две темы: подпериод приносит свои дела внутрь большой темы периода. Микропериод — фон ближайших недель, его тему смотрите там же.';
       expl.innerHTML = txt;
     })();
+  }
+
+  // ---------- Сроки транзитов: когда началось и когда кончится ----------
+  function trSign(key, ms){ return Jyotish.transits(new Date(ms))[key].signIdx; }
+  function signStay(key, atMs){
+    var D = 86400000, s0 = trSign(key, atMs), exit = null, enter = atMs, i, t;
+    for (i = 0, t = atMs; i < 2000; i++){ t += 3*D; if (trSign(key, t) !== s0){ exit = t; break; } }
+    if (exit){ for (t = exit; t > exit - 4*D; t -= D){ if (trSign(key, t) === s0){ exit = t + D; break; } } }
+    for (i = 0, t = atMs; i < 2000; i++){ t -= 3*D; if (trSign(key, t) !== s0){ enter = t + 3*D; break; } }
+    if (enter > atMs - 4*D) enter = atMs;
+    else { for (t = enter; t < enter + 4*D; t += D){ if (trSign(key, t) === s0){ enter = t; break; } } }
+    var reenter = null;
+    if (exit){ for (i = 0, t = exit; i < 120; i++){ t += 2*D; if (trSign(key, t) === s0){ reenter = t; break; } } }
+    return { enter: enter, exit: exit, reenter: reenter };
+  }
+  var ASP_LIST = [[0,'соединение',2],[60,'секстиль (поддержка)',2],[90,'квадрат (напряжение)',2],[120,'трин (поддержка)',2],[180,'оппозиция',2]];
+  function aspectSpans(key, chart, fromMs, toMs){
+    var D = 86400000;
+    var nat = [];
+    ['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn'].forEach(function(n){ if (chart.planets[n]) nat.push({ n: n, lon: chart.planets[n].sidLon, signIdx: chart.planets[n].signIdx }); });
+    if (chart.lagna && chart.lagna.sidLon != null) nat.push({ n: 'Asc', lon: chart.lagna.sidLon, signIdx: chart.lagna.signIdx });
+    var RU = { Sun:'Солнцем', Moon:'Луной', Mercury:'Меркурием', Venus:'Венерой', Mars:'Марсом', Jupiter:'Юпитером', Saturn:'Сатурном', Asc:'асцендентом' };
+    var open = {}, out = [];
+    function close(pk, t){ var o = open[pk]; if (o && o.start != null){ if (t - o.start >= 5*D) out.push({ n: o.n, ru: RU[o.n], signIdx: o.signIdx, aspect: o.aspect, start: o.start, end: t, exact: o.exactMs }); } delete open[pk]; }
+    for (var t = fromMs; t <= toMs; t += D){
+      var L = Jyotish.transits(new Date(t))[key].sidLon;
+      nat.forEach(function(q){
+        var d = Math.abs((((L - q.lon) % 360) + 540) % 360 - 180);
+        var hit = null, hitA = null;
+        ASP_LIST.forEach(function(a){ if (hit === null && Math.abs(d - a[0]) <= a[2]){ hit = a[1]; hitA = a[0]; } });
+        var pk = q.n;
+        if (hit){
+          var o = open[pk];
+          if (!o || o.aspect !== hit){ close(pk, t); open[pk] = { n: q.n, signIdx: q.signIdx, aspect: hit, start: t, exactMs: t, minorb: Math.abs(d - hitA) }; }
+          else if (Math.abs(d - hitA) < o.minorb){ o.minorb = Math.abs(d - hitA); o.exactMs = t; }
+        } else if (open[pk]){ close(pk, t); }
+      });
+    }
+    Object.keys(open).forEach(function(pk){ close(pk, toMs); });
+    return out;
+  }
+  function pAboutPlanet(planet, level){
+    var en = P_EN[planet]; var pl = en && state.chart.planets[en];
+    var own = (P_OWN[planet]||[]).map(function(s){ return pHouse(state.chart, s); });
+    var sit = pl ? pHouse(state.chart, pl.signIdx) : null;
+    var t = '<b>' + level + ' ' + planet + '</b>: ';
+    if (own.length) t += 'управляет у вас ' + own.map(function(h){ return h + '-м домом (' + HOUSE_MEAN[h] + ')'; }).join(' и ');
+    else t += 'планета без своих домов (узёл) — работает через дом, где стоит';
+    if (sit) t += ', а сам(а) стоит в ' + sit + '-м доме (' + HOUSE_MEAN[sit] + ')';
+    return t + '. ';
+  }
+  function renderTransitPeriods(chart){
+    var box = $('transits'); if (!box) return;
+    var now = Date.now(), D = 86400000;
+    var tzCal = parseFloat(($('m-tz')||{}).value); if (isNaN(tzCal)) tzCal = 3;
+    var h = '<h3 style="margin-top:12px">Когда начинается и когда заканчивается: сроки медленных транзитов</h3>';
+    var pers = [];
+    ['Saturn','Jupiter','Rahu','Ketu'].forEach(function(key){
+      var RU = { Saturn:'Сатурн', Jupiter:'Юпитер', Rahu:'Раху', Ketu:'Кету' }[key];
+      var tr = Jyotish.transits(new Date(now))[key];
+      var stay = signStay(key, now);
+      var houseN = (tr.signIdx - chart.lagna.signIdx + 12) % 12 + 1;
+      h += '<div class="pcard"><div class="phead"><span class="pglyph">' + (P_GLYPH[RU]||'') + '</span><span class="ptitle">' + RU + ' в ' + esc(tr.sign) + ', ' + houseN + '-й дом</span></div>';
+      h += '<div class="prange">в этом знаке с ' + pFmtD(stay.enter, tzCal) + ' по ' + (stay.exit ? pFmtD(stay.exit, tzCal) : '—');
+      if (stay.reenter) h += ' (ретроград: может вернуться в знак около ' + pFmtD(stay.reenter, tzCal) + ')';
+      h += '</div>';
+      var spans = aspectSpans(key, chart, now - 60*D, now + 540*D).slice(0,4);
+      if (spans.length){
+        h += '<div class="feed-det" style="display:block">';
+        spans.forEach(function(sp){
+          var hn = sp.n === 'Asc' ? 1 : (sp.signIdx - chart.lagna.signIdx + 12) % 12 + 1;
+          h += '<div>• ' + sp.aspect + ' с вашим ' + sp.ru + ' (' + hn + '-й дом): действует ' + pFmtD(sp.start, tzCal) + ' — ' + pFmtD(sp.end, tzCal) + ', точно ' + pFmtD(sp.exact, tzCal) + '</div>';
+        });
+        h += '</div>';
+      } else h += '<div class="fm">Точных аспектов к вашим натальным точкам в ближайшие полтора года нет.</div>';
+      h += '</div>';
+      pers.push(RU + ' в ' + houseN + '-м доме (' + HOUSE_MEAN[houseN] + ') до ' + (stay.exit ? pFmtD(stay.exit, tzCal) : '—'));
+    });
+    box.innerHTML += h;
+    var ex = $('ex-transits');
+    if (ex) ex.innerHTML = pers.join('; ') + '. После каждой даты дом меняет знак — фон темы переключается.';
   }
 
   function onCalendarPdf(){
