@@ -11,7 +11,7 @@ W=$REPO/apk-src/work; rm -rf "$W"; mkdir -p "$W/src/ru/jyotish/app2" "$W/gen/ru/
 BT=$REPO/apk-src/bt/android-13
 if [ ! -x "$BT/aapt" ]; then mkdir -p "$REPO/apk-src/bt"; curl -sSLo /tmp/bt.zip https://dl.google.com/android/repository/build-tools_r33.0.1-linux.zip; unzip -q /tmp/bt.zip -d "$REPO/apk-src/bt"; chmod -R +x "$BT"; rm -f /tmp/bt.zip; fi
 AJ=$REPO/apk-src/lib/android.jar
-if [ ! -f "$AJ" ]; then mkdir -p "$REPO/apk-src/lib"; curl -sSLo /tmp/p30.zip https://dl.google.com/android/repository/platform-30_r03.zip; unzip -q -j /tmp/p30.zip android.jar -d "$REPO/apk-src/lib"; rm -f /tmp/p30.zip; fi
+if [ ! -f "$AJ" ]; then mkdir -p "$REPO/apk-src/lib" /tmp/p30x; curl -sSLo /tmp/p30.zip https://dl.google.com/android/repository/platform-30_r03.zip; unzip -q /tmp/p30.zip -d /tmp/p30x; find /tmp/p30x -name android.jar -exec cp {} "$AJ" \; ; rm -rf /tmp/p30.zip /tmp/p30x; fi
 sed -e "s/@VC@/$VC/" -e "s/@VN@/$VN/" "$REPO/apk-src/AndroidManifest.xml" > "$W/AndroidManifest.xml"
 cp "$REPO/apk-src/MainActivity.java" "$W/src/ru/jyotish/app2/"
 for d in "drawable-mdpi-v4 48" "drawable-hdpi-v4 72" "drawable-xhdpi-v4 96" "drawable-xxhdpi-v4 144" "drawable-xxxhdpi-v4 192" "drawable 48"; do set -- $d; mkdir -p "$W/res/$1"; convert "$REPO/apk-src/icon_src.png" -resize "$2x$2" "$W/res/$1/ic_launcher.png"; done
