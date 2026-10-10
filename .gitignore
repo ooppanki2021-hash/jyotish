@@ -1,2 +1,6 @@
 .DS_Store
 Thumbs.db
+apk-src/work/
+apk-src/bt/
+apk-src/lib/
+__pycache__/
