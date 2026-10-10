@@ -19,6 +19,7 @@
     <button type="button" id="theme-toggle" class="tab theme-toggle" aria-label="Переключить тему">🌙 Тёмная тема</button>
     <button class="tab active" data-tab="natal">Кто я, мой путь</button>
     <button class="tab" data-tab="predict">Прогноз по дням</button>
+    <button class="tab" data-tab="periods">⏳ Периоды</button>
     <button class="tab" data-tab="causal">🕯️ Кармический разбор</button>
     <button class="tab" data-tab="natal-sak">📖 Натальная карта (Сакойян)</button>
     <button class="tab" data-tab="prof">💼 Профессия и бизнес (Дараган)</button>
@@ -205,6 +206,22 @@
   </section>
 
   <!-- ============ ПРИЧИННЫЕ АСПЕКТЫ (КАРМИЧЕСКИЙ РАЗБОР) ============ -->
+  <section class="panel" id="tab-periods">
+    <div class="card">
+      <h2>Периоды (даша): что идёт сейчас</h2>
+      <details class="expl">
+        <summary>Что это и какое значение имеет в жизни</summary>
+        <div class="expl-body">
+          <p><b>Общие сведения.</b> Периоды — это «мелодия времени» в вашей жизни: большая волна задаёт тему на несколько лет, волны поменьше добавляют оттенки внутри неё. Большая волна называется махадаша (6–20 лет), средняя — антардаша, или подпериод (от месяцев до пары лет), совсем малая — пратьянтарадаша, микропериод (дни–недели). Тема волны читается по планете: какими областями жизни эта планета у вас заведует и где сама стоит.</p>
+          <p><b>Лично для вас.</b> <span id="p-expl-personal">Выберите карту или заполните данные рождения — пояснение посчитается под вашу карту.</span></p>
+          <p class="muted">Процент и полоска показывают, сколько периода уже прожито; «осталось» — до смены волны. Границы смен — моменты, когда меняется фон: полезно планировать старты сразу после них, а важные завершения — до.</p>
+        </div>
+      </details>
+      <div id="p-cards" class="muted" style="margin-top:8px">Выберите сохранённую карту или заполните данные рождения на вкладке «Кто я, мой путь».</div>
+      <h3 style="margin-top:14px">Ближайшие смены фона</h3>
+      <div id="p-changes" class="muted">—</div>
+    </div>
+  </section>
   <section class="panel" id="tab-causal">
     <div class="card expl-card">
       <h2>🕯️ Что это за разбор</h2>

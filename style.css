@@ -373,3 +373,18 @@ table.mtable th{background:var(--gold-soft);font-weight:600}
 .fr{color:#b02e24;margin:2px 0}
 .fm{color:#767068;font-size:12.5px}
 .feed-det{margin-top:6px;font-size:13px;color:var(--ink,#1e1c1a)}
+
+/* Карточки периодов */
+.pcard{border:1px solid var(--line,#e2ddd2);border-radius:12px;padding:10px 12px;margin:8px 0;background:var(--card,#fff)}
+.pcard .phead{display:flex;align-items:center;gap:10px}
+.pcard .pglyph{font-size:26px;line-height:1;color:var(--gold,#8b6214)}
+.pcard .pabbr{font-size:11px;color:var(--muted,#767068);border:1px solid var(--line,#e2ddd2);border-radius:6px;padding:1px 5px}
+.pcard .ptitle{font-weight:700}
+.pcard .prange{color:var(--muted,#767068);font-size:13px;margin:4px 0 6px}
+.pbar{height:9px;border-radius:6px;background:var(--line,#e2ddd2);overflow:hidden}
+.pbar i{display:block;height:100%;background:linear-gradient(90deg,#d9a419,#8b6214)}
+.pcard .pfoot{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted,#767068);margin-top:4px}
+.expl{border:1px solid var(--line,#e2ddd2);border-radius:10px;padding:6px 10px;margin:6px 0;background:var(--card,#fff)}
+.expl summary{cursor:pointer;font-weight:600}
+.expl-body p{margin:6px 0;font-size:13.5px}
+.pchange{padding:4px 0;border-bottom:1px dashed var(--line,#e2ddd2);font-size:13.5px}

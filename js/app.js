@@ -19,6 +19,7 @@
         document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
         t.classList.add('active');
         $('tab-'+t.dataset.tab).classList.add('active');
+        if (t.dataset.tab === 'periods') renderPeriods();
         if (nav && nav.classList.contains('menu-open')) { nav.classList.remove('menu-open'); if (menu) menu.setAttribute('aria-expanded','false'); }
       });
     });
@@ -1189,6 +1190,74 @@
     if (b2) b2.classList.toggle('primary', mode === 'month');
     if (mi){ mi.classList.toggle('hidden', mode !== 'month'); if (mode === 'month' && !mi.value){ var tz = parseFloat(($('m-tz')||{}).value)||0; var l = new Date(Date.now()+tz*3600000); mi.value = l.getUTCFullYear() + '-' + ('0'+(l.getUTCMonth()+1)).slice(-2); } }
     buildFeed();
+  }
+
+  // ---------- Вкладка «Периоды» ----------
+  var P_EN = { 'Солнце':'Sun','Луна':'Moon','Меркурий':'Mercury','Венера':'Venus','Марс':'Mars','Юпитер':'Jupiter','Сатурн':'Saturn','Раху':'Rahu','Кету':'Ketu' };
+  var P_GLYPH = { 'Солнце':'☉','Луна':'☽','Меркурий':'☿','Венера':'♀','Марс':'♂','Юпитер':'♃','Сатурн':'♄','Раху':'☊','Кету':'☋' };
+  var P_ABBR = { 'Солнце':'Со','Луна':'Лу','Меркурий':'Ме','Венера':'Ве','Марс':'Ма','Юпитер':'Юп','Сатурн':'Са','Раху':'Ра','Кету':'Ке' };
+  var P_OWN = { 'Солнце':[4],'Луна':[3],'Меркурий':[2,5],'Венера':[1,6],'Марс':[0,7],'Юпитер':[8,11],'Сатурн':[9,10],'Раху':[],'Кету':[] };
+  var HOUSE_MEAN = {1:'вы сами, тело, самоподача',2:'деньги, слово, ценности',3:'общение, братья-сёстры, короткие поездки',4:'дом, семья, внутренняя опора',5:'дети, творчество, роман',6:'здоровье, рутина, служба',7:'партнёрство, брак, открытые враги',8:'кризисы, трансформация, чужие ресурсы',9:'цели, наставники, дальние дороги',10:'карьера, статус, дело жизни',11:'доходы, планы, круги поддержки',12:'уединение, завершение, дальние берега'};
+  var P_MON = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+  function pFmtD(ms, tz){ var d = new Date(ms + (tz||0)*3600000); return d.getUTCDate() + ' ' + P_MON[d.getUTCMonth()] + ' ' + d.getUTCFullYear() + ' г.'; }
+  function pDur(ms){ var days = Math.round(ms/86400000); var y = Math.floor(days/365.25); var m = Math.floor((days - y*365.25)/30.44); var d = Math.round(days - y*365.25 - m*30.44); var out = []; if (y) out.push(y + ' лет'); if (m) out.push(m + ' мес.'); if (d || !out.length) out.push(d + ' дн.'); return out.join(' '); }
+  function pDurShort(ms){ var days = Math.round(ms/86400000); var y = Math.floor(days/365.25); var m = Math.floor((days - y*365.25)/30.44); var d = Math.round(days - y*365.25 - m*30.44); var out = []; if (y) out.push(y + ' г.'); if (m) out.push(m + ' мес.'); if (d) out.push(d + ' дн.'); return out.join(' ') || '0 дн.'; }
+  function pHouse(chart, signIdx){ return (signIdx - chart.lagna.signIdx + 12) % 12 + 1; }
+  function pCard(level, planet, node, tz){
+    var pct = Math.max(0, Math.min(100, (Date.now() - node.start) / (node.end - node.start) * 100));
+    var h = '<div class="pcard"><div class="phead"><span class="pglyph">' + (P_GLYPH[planet]||'') + '</span><span class="pabbr">' + (P_ABBR[planet]||'') + '</span>';
+    h += '<span class="ptitle">' + level + ' ' + planet + '</span></div>';
+    h += '<div class="prange">' + pFmtD(node.start, tz) + ' — ' + pFmtD(node.end, tz) + ' (' + pDur(node.end - node.start) + ')</div>';
+    h += '<div class="pbar"><i style="width:' + pct.toFixed(1) + '%"></i></div>';
+    h += '<div class="pfoot"><span>' + pct.toFixed(1) + '% завершено</span><span>Осталось: ' + pDurShort(node.end - Date.now()) + '</span></div>';
+    h += '<div class="pfoot"><span>Начало</span><span>Конец</span></div></div>';
+    return h;
+  }
+  function renderPeriods(){
+    var box = $('p-cards'), chg = $('p-changes'), expl = $('p-expl-personal');
+    if (!box) return;
+    if (!state.chart){ box.innerHTML = '<span class="muted">Выберите сохранённую карту или заполните данные рождения на вкладке «Кто я, мой путь».</span>'; return; }
+    var list = loadSaved(); var sel = $('cal-chart'); var idx = parseInt(sel && sel.value, 10); var rec = isNaN(idx) ? null : list[idx];
+    var p = readForm(); var by, bm, bd, bhh, bmm, btz;
+    if (rec){ var dt = String(rec.date||'').split('-'), tm = String(rec.time||'00:00').split(':'); by=+dt[0]; bm=+dt[1]; bd=+dt[2]; bhh=+(tm[0]||0); bmm=+(tm[1]||0); btz=+rec.tz||0; }
+    else { by=p.y; bm=p.m; bd=p.d; bhh=p.hh; bmm=p.mm; btz=p.tz; }
+    var birthMs = Date.UTC(by, bm-1, bd, bhh, bmm) - btz*3600000;
+    var tzCal = parseFloat(($('m-tz')||{}).value); if (isNaN(tzCal)) tzCal = btz;
+    var tree = Daily.buildDashaTree(state.chart.planets.Moon.sidLon, birthMs);
+    var now = Date.now();
+    var cur = Daily.dashaAt(tree, now);
+    if (!cur){ box.innerHTML = '<span class="muted">Периоды не найдены на текущую дату.</span>'; return; }
+    box.innerHTML = pCard('Махадаша', cur.md.planet, cur.md, tzCal) + (cur.ad ? pCard('Антардаша (подпериод)', cur.ad.planet, cur.ad, tzCal) : '') + (cur.pd ? pCard('Микропериод', cur.pd.planet, cur.pd, tzCal) : '');
+    // ближайшие смены
+    var ev = [];
+    (function(){
+      var ai = cur.md.antar.indexOf(cur.ad), pi = cur.ad && cur.pd ? cur.ad.pratyantar.indexOf(cur.pd) : -1;
+      if (cur.ad && pi >= 0 && pi + 1 < cur.ad.pratyantar.length){ var np = cur.ad.pratyantar[pi+1]; ev.push({ at: np.start, t: 'смена микропериода → ' + cur.md.planet + '/' + cur.ad.planet + '/' + np.planet }); }
+      if (cur.ad && ai >= 0 && ai + 1 < cur.md.antar.length){ var na = cur.md.antar[ai+1]; ev.push({ at: na.start, t: 'смена подпериода → ' + cur.md.planet + '/' + na.planet }); }
+      else { ev.push({ at: cur.md.end, t: 'смена подпериода и периода: заканчивается ' + cur.md.planet }); }
+      var mi = tree.indexOf(cur.md);
+      if (mi + 1 < tree.length) ev.push({ at: tree[mi+1].start, t: 'смена большого периода → начинается ' + tree[mi+1].planet + ' (махадаша)' });
+      if (cur.ad && ai >= 0 && ai + 1 < cur.md.antar.length){ var na2 = cur.md.antar[ai+1]; if (na2.pratyantar.length) ev.push({ at: na2.pratyantar[0].start, t: 'первый микропериод нового подпериода: ' + na2.planet + '/' + na2.pratyantar[0].planet }); }
+    })();
+    ev.sort(function(a,b){ return a.at - b.at; });
+    chg.innerHTML = ev.slice(0,4).map(function(e){ return '<div class="pchange">' + pFmtD(e.at, tzCal) + ' — ' + esc(e.t) + '</div>'; }).join('') || '—';
+    // личное пояснение
+    (function(){
+      if (!expl) return;
+      function about(planet, level){
+        var en = P_EN[planet]; var pl = en && state.chart.planets[en];
+        var own = (P_OWN[planet]||[]).map(function(s){ return pHouse(state.chart, s); });
+        var sit = pl ? pHouse(state.chart, pl.signIdx) : null;
+        var t = '<b>' + level + ' ' + planet + '</b>: ';
+        if (own.length) t += 'управляет у вас ' + own.map(function(h){ return h + '-м домом (' + HOUSE_MEAN[h] + ')'; }).join(' и ');
+        else t += 'планета без своих домов (узёл) — работает через дом, где стоит';
+        if (sit) t += ', а сам(а) стоит в ' + sit + '-м доме (' + HOUSE_MEAN[sit] + ')';
+        return t + '. ';
+      }
+      var txt = about(cur.md.planet, 'Махадаша') + (cur.ad ? about(cur.ad.planet, 'Подпериод') : '');
+      txt += 'Складывайте две темы: подпериод приносит свои дела внутрь большой темы периода. Микропериод — фон ближайших недель, его тему смотрите там же.';
+      expl.innerHTML = txt;
+    })();
   }
 
   function onCalendarPdf(){
