@@ -42,6 +42,7 @@
 ## 5. Ключи и подписи
 - Кейстор пользовательницы jyotish2.keystore (PKCS12, alias jyotish2) В РЕПОЗИТОРИИ НЕ ХРАНИТСЯ — его и пароль она выдаёт сама под задачу. Отпечаток её сертификата SHA-256: 82cf7a8d4e42441cb9250a59259238d444397590aabbec1333b5f3dbbf9b127f. После подписи всегда сверять отпечаток.
 - Семейные debug-ключи (cert 74a7e333…) для финальных сборок НЕ использовать — обновление не встанет поверх её приложения.
+- В текущей рабочей области кейстор лежит: /home/user/apkbuild/jyotish2.keystore (пароль выдаёт она).
 
 ## 6. Сборка APK (коротко)
 `KSPASS=<пароль> bash apk-src/build_apk.sh 10013 2.113 /путь/jyotish2.keystore /путь/out.apk`
@@ -53,6 +54,7 @@
 - Джйотиш: `node tools/daily.js --out year.json --by 1984-04-27 --bt 00:40 --btz 4 --lat 43.02 --lon 44.68 --from 2026-10-01 --to 2027-09-30 --lat2 43.02 --lon2 44.68 --tz2 3`, затем `python3 tools/make_calendar_pdf.py --data year.json --outdir OUT`, затем `python3 tools/jyotish-set/instr_jyotish.py OUT`. Имена файлов: jyotish-calendar-YYYY-MM.pdf + jyotish-calendar-13-как-читать.pdf.
 - Дараган: `cd tools/daragan-set && node gen_set.js && python3 render_set.py` (set/ = 12 месяцев + памятка).
 - Комплект = 13 файлов; отдавать папкой.
+- make_calendar_pdf.py восстановлен по утверждённому комплекту: содержимое и стиль совпадают, переносы отдельных строк могут отличаться на доли мм от отпечатанного тиража окт.2026 — это норма, не регрессия.
 
 ## 8. Контракты, которые нельзя ломать
 - customLines в drawMonth: день = {d, vara, stars, lunarText, customLines:[{kind:'good'|'bad'|'mid',text}], timeLine, events:[]}; тонировка клетки по наличию good/bad; у дней с customLines нет spheres — все обращения к spheres обязаны быть с `|| []`.
