@@ -1245,6 +1245,9 @@
     var cur = Daily.dashaAt(tree, now);
     if (!cur){ box.innerHTML = '<span class="muted">Периоды не найдены на текущую дату.</span>'; return; }
     box.innerHTML = pCard('Махадаша', cur.md.planet, cur.md, tzCal) + (cur.ad ? pCard('Антардаша (подпериод)', cur.ad.planet, cur.ad, tzCal) : '') + (cur.pd ? pCard('Микропериод', cur.pd.planet, cur.pd, tzCal) : '');
+    state.dashaCur = { cur: cur, tree: tree, tzCal: tzCal, lat: parseFloat($('m-lat').value), lon: parseFloat($('m-lon').value),
+      birth: { by: by, bm: bm, bd: bd, bhh: bhh, bmm: bmm, btz: btz } };
+    renderPlan(state.chart);
     // ближайшие смены
     var ev = [];
     (function(){
@@ -1357,6 +1360,120 @@
     var ex = $('ex-transits');
     if (ex) ex.innerHTML = pers.join('; ') + '. После каждой даты дом меняет знак — фон темы переключается.';
   }
+
+  // ---------- План действий на период ----------
+  var COMBUST_DEG_APP = { Mercury:14, Venus:10, Mars:17, Jupiter:11, Saturn:15, Moon:12 };
+  function renderPlan(chart){
+    var box = $('p-plan'); if (!box) return;
+    var dc = state.dashaCur;
+    if (!dc || !dc.cur){ box.innerHTML = '<span class="muted">План появится, когда будет выбрана карта.</span>'; return; }
+    var cur = dc.cur, tzCal = dc.tzCal, now = Date.now(), D = 86400000;
+    var li = chart.lagna.signIdx, mS = chart.planets.Moon.signIdx;
+    function H(sg){ return (sg - li + 12) % 12 + 1; }
+    var tr = Jyotish.transits(new Date(now));
+    var html = '';
+    html += '<div class="pcard"><div class="ptitle">Суть периода</div><div class="feed-det" style="display:block">';
+    html += '<div>' + pAboutPlanet(cur.md.planet, 'Махадаша:') + '</div>';
+    if (cur.ad) html += '<div>' + pAboutPlanet(cur.ad.planet, 'Подпериод:') + ' Конец подпериода — ' + pFmtD(cur.ad.end, tzCal) + '.</div>';
+    if (cur.pd) html += '<div>Фон ближайших недель — микропериод ' + cur.pd.planet + ', до ' + pFmtD(cur.pd.end, tzCal) + '.</div>';
+    html += '</div></div>';
+    var sup = {};
+    function addSup(h, why){ (sup[h] = sup[h] || []).push(why); }
+    function lordHouses(planet){
+      var hs = (P_OWN[planet]||[]).map(function(sg){ return H(sg); });
+      var en = P_EN[planet]; if (en && chart.planets[en]) hs.push(H(chart.planets[en].signIdx));
+      return hs;
+    }
+    if (cur.ad) lordHouses(cur.ad.planet).forEach(function(h){ addSup(h, 'тема подпериода'); });
+    if (cur.pd) lordHouses(cur.pd.planet).forEach(function(h){ addSup(h, 'фон микропериода'); });
+    var jS = tr.Jupiter.signIdx, jStay = signStay('Jupiter', now);
+    [jS, (jS+4)%12, (jS+8)%12].forEach(function(sg){ addSup(H(sg), 'Юпитер поддерживает'); });
+    html += '<div class="pcard"><div class="ptitle">Можно начинать и опираться — до ' + pFmtD(jStay.exit, tzCal) + '</div><div class="feed-det" style="display:block">';
+    Object.keys(sup).sort(function(a,b){ return a-b; }).forEach(function(h){
+      var why = []; sup[h].forEach(function(w){ if (why.indexOf(w) < 0) why.push(w); });
+      html += '<div>• ' + h + '-й дом (' + HOUSE_MEAN[h] + '): ' + why.join(', ') + '</div>';
+    });
+    html += '</div></div>';
+    var sS = tr.Saturn.signIdx, sStay = signStay('Saturn', now);
+    html += '<div class="pcard"><div class="ptitle">С усилием и без спешки — до ' + pFmtD(sStay.exit, tzCal) + '</div><div class="feed-det" style="display:block">';
+    [sS, (sS+2)%12, (sS+6)%12, (sS+9)%12].forEach(function(sg){
+      var h = H(sg); html += '<div>• ' + h + '-й дом (' + HOUSE_MEAN[h] + '): Сатурн требует дисциплины, сроков и двойной проверки</div>';
+    });
+    html += '</div></div>';
+    var comb = [];
+    Object.keys(chart.planets).forEach(function(k){
+      if (k === 'Sun') return;
+      if (chart.planets[k].combust) comb.push(k);
+    });
+    if (comb.length){
+      html += '<div class="pcard"><div class="ptitle">Сожжение в вашей карте (постоянная пометка)</div><div class="feed-det" style="display:block">';
+      comb.forEach(function(k){
+        var pl = chart.planets[k];
+        html += '<div>• ' + esc(PLANETS_RU_APP[k]||k) + ' в ' + (pl.combustDist||0).toFixed(1) + '° от Солнца: темы ' + H(pl.signIdx) + '-го дома (' + HOUSE_MEAN[H(pl.signIdx)] + ') любят двойную проверку бумаг и договорённостей</div>';
+      });
+      html += '</div></div>';
+    }
+    html += '<div id="p-plan-rest"><span class="muted">Рассчитываю границы, затмения и ритм месяцев…</span></div>';
+    html += '<p class="muted" style="margin-top:6px">Точные дни и часы под конкретное дело смотрите в мухурте и ленте «по дням»: план даёт темы и месяцы, мухурта — окна.</p>';
+    box.innerHTML = html;
+    setTimeout(function(){ renderPlanRest(chart, dc, html); }, 60);
+  }
+  function renderPlanRest(chart, dc, htmlBefore){
+    var box = $('p-plan'); if (!box) return;
+    var cur = dc.cur, tzCal = dc.tzCal, now = Date.now(), D = 86400000;
+    var li = chart.lagna.signIdx, mS = chart.planets.Moon.signIdx;
+    function H(sg){ return (sg - li + 12) % 12 + 1; }
+    var horizon = Math.min((cur.ad ? cur.ad.end : now + 400*D), now + 400*D);
+    var d0 = new Date(now), d1 = new Date(horizon);
+    var params = { by: dc.birth.by, bm: dc.birth.bm, bd: dc.birth.bd, bhh: dc.birth.bhh, bmm: dc.birth.bmm, btz: dc.birth.btz,
+      blat: dc.lat, blon: dc.lon, lat: dc.lat, lon: dc.lon, tz: tzCal,
+      fromY: d0.getUTCFullYear(), fromM: d0.getUTCMonth()+1, fromD: d0.getUTCDate(),
+      toY: d1.getUTCFullYear(), toM: d1.getUTCMonth()+1, toD: d1.getUTCDate() };
+    var data = null;
+    try { data = Daily.compute(params); } catch(e){}
+    var html = '<div class="pcard"><div class="ptitle">Завершить или передать до даты</div><div class="feed-det" style="display:block">';
+    if (cur.pd) html += '<div>• Дела микропериода ' + cur.pd.planet + ' — завершить к ' + pFmtD(cur.pd.end, tzCal) + '</div>';
+    if (cur.ad) html += '<div>• Крупные темы подпериода ' + cur.ad.planet + ' — завершить или передать к ' + pFmtD(cur.ad.end, tzCal) + ': после этой даты фон переключится</div>';
+    var ecl = [];
+    if (data) data.days.forEach(function(d){
+      (d.events||[]).forEach(function(e){
+        if (e.kind === 'eclipse-solar' || e.kind === 'eclipse-lunar'){
+          var sg = Jyotish.transits(new Date(e.atMs)).Moon.signIdx;
+          var touch = (sg === li || sg === (li+6)%12 || sg === mS || sg === (mS+6)%12);
+          ecl.push({ at: e.atMs, kind: e.kind, touch: touch });
+        }
+      });
+    });
+    ecl.forEach(function(e){
+      html += '<div>• ' + (e.kind === 'eclipse-solar' ? 'Солнечное затмение' : 'Лунное затмение') + ' ' + pFmtD(e.at, tzCal) + (e.touch ? ' — по вашей оси: за 3 дня и 3 дня после не начинайте нового' : ' — мимо ваших осей: важен только как фон месяца') + '</div>';
+    });
+    html += '</div></div>';
+    if (data){
+      html += '<div class="pcard"><div class="ptitle">Ритм месяцев: где старты ложатся легко</div><div class="feed-det" style="display:block">';
+      var months = {};
+      data.days.forEach(function(d){
+        var k = d.y + '-' + d.m;
+        var mo = months[k] = months[k] || { y: d.y, m: d.m, good: 0, quiet: 0, ecl: 0, axis: 0 };
+        if (d.stars >= 4) mo.good++;
+        if (d.stars <= 2) mo.quiet++;
+      });
+      ecl.forEach(function(e){ var dd = new Date(e.at + tzCal*3600000); var k = dd.getUTCFullYear() + '-' + (dd.getUTCMonth()+1); if (months[k]){ months[k].ecl++; if (e.touch) months[k].axis++; } });
+      Object.keys(months).forEach(function(k){
+        var mo = months[k];
+        var t = '• ' + P_MON[mo.m-1] + ' ' + mo.y + ': ' + mo.good + ' дн.-помощника, ' + mo.quiet + ' дн.-тишины';
+        if (mo.axis) t += ', затмение по вашей оси — середина месяца на паузу';
+        else if (mo.ecl) t += ', затмение фоном — старты только в зелёные дни';
+        else if (mo.good >= 8) t += ' — старты ложатся легко';
+        else if (mo.quiet > mo.good) t += ' — месяц завершений, а не стартов';
+        if (cur.ad){ var ae = new Date(cur.ad.end + tzCal*3600000); if (ae.getUTCFullYear() === mo.y && ae.getUTCMonth()+1 === mo.m) t += ', граница подпериода — неделя передачи дел'; }
+        html += '<div>' + t + '</div>';
+      });
+      html += '</div></div>';
+    }
+    var rest = $('p-plan-rest');
+    if (rest) rest.outerHTML = html;
+  }
+  var PLANETS_RU_APP = { Sun:'Солнце', Moon:'Луна', Mercury:'Меркурий', Venus:'Венера', Mars:'Марс', Jupiter:'Юпитер', Saturn:'Сатурн', Rahu:'Раху', Ketu:'Кету' };
 
   function onCalendarPdf(){
     var list = loadSaved();
