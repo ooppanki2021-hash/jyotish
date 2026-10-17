@@ -168,44 +168,19 @@ function kalas(sunrise, sunset, vara) {
 }
 
 /* ---------------- Вишоттари: полное дерево до пратьянтардаши ---------------- */
-const DASHA_ORDER = ['Кету', 'Венера', 'Солнце', 'Луна', 'Марс', 'Раху', 'Юпитер', 'Сатурн', 'Меркурий'];
 function buildDashaTree(moonSidLon, birthMs) {
-  const nIdx = Math.floor(moonSidLon / (360 / 27));
-  const frac = (moonSidLon % (360 / 27)) / (360 / 27);
-  const lordIdx = nIdx % 9;
-  const remainYears = NAK_YEARS[DASHA_ORDER[lordIdx]] * (1 - frac);
-  const YEAR = 365.25 * 86400000;
-  const maha = [];
-  let cur = birthMs;
-  for (let k = 0; k < 9; k++) {
-    const pl = DASHA_ORDER[(lordIdx + k) % 9];
-    const yrs = k === 0 ? remainYears : NAK_YEARS[pl];
-    const end = cur + yrs * YEAR;
-    maha.push({ planet: pl, level: 'MD', start: cur, end, years: yrs, antar: [] });
-    // антарадаши
-    let acur = cur;
-    const startIdx = DASHA_ORDER.indexOf(pl);
-    for (let j = 0; j < 9; j++) {
-      const aPl = DASHA_ORDER[(startIdx + j) % 9];
-      const aYrs = yrs * NAK_YEARS[aPl] / 120;
-      const aEnd = acur + aYrs * YEAR;
-      const ant = { planet: aPl, level: 'AD', start: acur, end: aEnd, pratyantar: [] };
-      // пратьянтардаши
-      let pcur = acur;
-      const pStartIdx = DASHA_ORDER.indexOf(aPl);
-      for (let i = 0; i < 9; i++) {
-        const pPl = DASHA_ORDER[(pStartIdx + i) % 9];
-        const pYrs = aYrs * NAK_YEARS[pPl] / 120;
-        const pEnd = pcur + pYrs * YEAR;
-        ant.pratyantar.push({ planet: pPl, level: 'PD', start: pcur, end: pEnd });
-        pcur = pEnd;
-      }
-      maha[maha.length - 1].antar.push(ant);
-      acur = aEnd;
-    }
-    cur = end;
-  }
-  return maha;
+  // Один расчёт для таблиц, карточек периодов и календаря. Ядро сохраняет
+  // настоящее начало первого периода до рождения и обрезает лишь показ.
+  return J.vimshottari(moonSidLon, new Date(birthMs)).map(md => ({
+    planet: md.planet, level: 'MD', start: +md.start, end: +md.end,
+    years: md.years,
+    antar: J.antardasha(null, md).map(ad => ({
+      planet: ad.planet, level: 'AD', start: +ad.start, end: +ad.end,
+      pratyantar: J.antardasha(null, ad).map(pd => ({
+        planet: pd.planet, level: 'PD', start: +pd.start, end: +pd.end
+      }))
+    }))
+  }));
 }
 function dashaAt(tree, ms) {
   for (const md of tree) {
