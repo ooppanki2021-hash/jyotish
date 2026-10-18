@@ -50,7 +50,9 @@
     return 23.43929111 - 0.0130042*T - 1.64e-7*T*T + 5.04e-7*T*T*T;
   }
 
-  // Тропическая эклиптическая долгота планеты
+  // Тропическая эклиптическая долгота НА ДАТУ.
+  // GeoVector даёт вектор EQJ (J2000), но Ecliptic уже переводит его в ECT.
+  // Ручная прибавка прецессии здесь повторно учла бы тот же эффект.
   function tropicalLon(body, t){
     var v = A.GeoVector(body, t, true);
     var e = A.Ecliptic(v);
@@ -95,11 +97,19 @@
     return cands[1];
   }
 
+  // Общая позиция в лунном участке. Остаток через % на дробном делителе
+  // даёт сбой у точных границ (например, 40 % (360/27) почти равно 360/27).
+  function nakshatraPosition(sidLon){
+    var units = norm360(sidLon) / (360/27);
+    var nearest = Math.round(units);
+    if (Math.abs(units-nearest) < 1e-12) units = nearest % 27;
+    var n = Math.floor(units);
+    return { index: n, fraction: units-n };
+  }
   // Накшатра и пада
   function nakshatraInfo(sidLon){
-    var n = Math.floor(sidLon / (360/27));
-    var rem = sidLon % (360/27);
-    var pada = Math.floor(rem / (360/27/4)) + 1;
+    var position = nakshatraPosition(sidLon), n = position.index;
+    var pada = Math.floor(position.fraction*4 + 1e-12) + 1;
     return { index: n, name: NAKSHATRA[n], lord: NAK_LORDS[n % 9], pada: pada };
   }
 
@@ -174,8 +184,8 @@
 
   // Вишоттари-даша
   function vimshottari(moonSidLon, birthDate){
-    var n = Math.floor(moonSidLon / (360/27));
-    var frac = (moonSidLon % (360/27)) / (360/27);
+    var position = nakshatraPosition(moonSidLon);
+    var n = position.index, frac = position.fraction;
     var lordIdx = n % 9;
     var years = NAK_YEARS[NAK_LORDS[lordIdx]];
     var remain = years * (1 - frac);
@@ -186,28 +196,41 @@
       seq.push({ planet: NAK_LORDS[li], years: NAK_YEARS[NAK_LORDS[li]] });
     }
     var cur = birthDate.getTime();
+    var yearMs = 365.25*86400000;
     var res = [];
     for (var i=0;i<9;i++){
       var y = (i===0) ? remain : seq[i].years;
-      var end = cur + y*365.25*86400000;
-      res.push({ planet: seq[i].planet, years: y, start: new Date(cur), end: new Date(end) });
+      var end = Math.round(cur + y*yearMs);
+      // Первый период начался до рождения. В таблице показываем остаток,
+      // но его подпериоды нужно делить от полного, а не усечённого начала.
+      res.push({ planet: seq[i].planet, years: y,
+        start: new Date(cur), end: new Date(end),
+        fullStart: new Date(end - seq[i].years*yearMs), fullYears: seq[i].years });
       cur = end;
     }
     return res;
   }
   function antardasha(mahadasha, maha){
-    var order = ['Кету','Венера','Солнце','Луна','Марс','Раху','Юпитер','Сатурн','Меркурий'];
-    // начинаем с самой махадаши
+    // Сигнатура сохранена; тот же расчёт используется и для микропериодов.
+    var order = NAK_LORDS;
     var startIdx = order.indexOf(maha.planet);
-    var total = maha.years;
-    var cur = maha.start.getTime();
+    var total = maha.fullYears != null ? maha.fullYears : maha.years;
+    var cur = maha.fullStart ? maha.fullStart.getTime() : maha.start.getTime();
+    var visibleStart = maha.start.getTime(), visibleEnd = maha.end.getTime();
+    var yearMs = 365.25*86400000;
     var res = [];
     for (var k=0;k<9;k++){
       var li = (startIdx+k)%9;
       var pl = order[li];
       var y = total * NAK_YEARS[pl] / 120.0;
-      var end = cur + y*365.25*86400000;
-      res.push({ planet: pl, start: new Date(cur), end: new Date(end) });
+      // Последняя граница точно совпадает с концом родительского периода.
+      var end = k===8 ? visibleEnd : cur + y*yearMs;
+      var startMs = Math.max(Math.round(cur), visibleStart);
+      var endMs = Math.min(Math.round(end), visibleEnd);
+      if (endMs > startMs){
+        res.push({ planet: pl, start: new Date(startMs), end: new Date(endMs),
+          years: (endMs-startMs)/yearMs, fullStart: new Date(Math.round(cur)), fullYears: y });
+      }
       cur = end;
     }
     return res;
@@ -350,7 +373,7 @@
     var n = nodeSid();
     function pl(lam){
       var si = Math.floor(lam/30);
-      return { signIdx: si, sign: SIGNS[si], deg: lam%30, degText: fmtDeg(lam%30) };
+      return { sidLon: lam, signIdx: si, sign: SIGNS[si], deg: lam%30, degText: fmtDeg(lam%30) };
     }
     return {
       Saturn: pl(sid(A.Body.Saturn)),

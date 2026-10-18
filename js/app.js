@@ -1234,11 +1234,14 @@
     var box = $('p-cards'), chg = $('p-changes'), expl = $('p-expl-personal');
     if (!box) return;
     if (!state.chart){ box.innerHTML = '<span class="muted">Выберите сохранённую карту или заполните данные рождения на вкладке «Кто я, мой путь».</span>'; return; }
-    var list = loadSaved(); var sel = $('cal-chart'); var idx = parseInt(sel && sel.value, 10); var rec = isNaN(idx) ? null : list[idx];
-    var p = readForm(); var by, bm, bd, bhh, bmm, btz;
-    if (rec){ var dt = String(rec.date||'').split('-'), tm = String(rec.time||'00:00').split(':'); by=+dt[0]; bm=+dt[1]; bd=+dt[2]; bhh=+(tm[0]||0); bmm=+(tm[1]||0); btz=+rec.tz||0; }
-    else { by=p.y; bm=p.m; bd=p.d; bhh=p.hh; bmm=p.mm; btz=p.tz; }
-    var birthMs = Date.UTC(by, bm-1, bd, bhh, bmm) - btz*3600000;
+    // Луна и время рождения должны принадлежать одной рассчитанной карте.
+    // Выбор другой карты для календаря или ещё не отправленная форма
+    // не должны менять периоды уже открытой карты.
+    var birthMs = new Date(state.chart.utc).getTime();
+    var btz = +state.chart.tz || 0;
+    var birthWall = new Date(birthMs + btz*3600000);
+    var by = birthWall.getUTCFullYear(), bm = birthWall.getUTCMonth()+1,
+      bd = birthWall.getUTCDate(), bhh = birthWall.getUTCHours(), bmm = birthWall.getUTCMinutes();
     var tzCal = parseFloat(($('m-tz')||{}).value); if (isNaN(tzCal)) tzCal = btz;
     var tree = Daily.buildDashaTree(state.chart.planets.Moon.sidLon, birthMs);
     var now = Date.now();
@@ -1284,13 +1287,31 @@
   function trSign(key, ms){ return Jyotish.transits(new Date(ms))[key].signIdx; }
   function signStay(key, atMs){
     var D = 86400000, s0 = trSign(key, atMs), exit = null, enter = atMs, i, t;
-    for (i = 0, t = atMs; i < 2000; i++){ t += 3*D; if (trSign(key, t) !== s0){ exit = t; break; } }
-    if (exit){ for (t = exit; t > exit - 4*D; t -= D){ if (trSign(key, t) === s0){ exit = t + D; break; } } }
-    for (i = 0, t = atMs; i < 2000; i++){ t -= 3*D; if (trSign(key, t) !== s0){ enter = t + 3*D; break; } }
-    if (enter > atMs - 4*D) enter = atMs;
-    else { for (t = enter; t < enter + 4*D; t += D){ if (trSign(key, t) === s0){ enter = t; break; } } }
+    // Шаг нужен лишь для поиска интервала; сам переход уточняем до минуты,
+    // иначе дата в интерфейсе зависела от часа открытия вкладки.
+    function boundary(lo, hi, beforeSign){
+      while (hi-lo > 60000){
+        var mid = (lo+hi)/2;
+        if (trSign(key, mid) === beforeSign) lo = mid; else hi = mid;
+      }
+      return hi;
+    }
+    for (i = 0, t = atMs; i < 2000; i++){
+      if (trSign(key, t+3*D) !== s0){ exit = boundary(t, t+3*D, s0); break; }
+      t += 3*D;
+    }
+    for (i = 0, t = atMs; i < 2000; i++){
+      var before = trSign(key, t-3*D);
+      if (before !== s0){ enter = boundary(t-3*D, t, before); break; }
+      t -= 3*D;
+    }
     var reenter = null;
-    if (exit){ for (i = 0, t = exit; i < 120; i++){ t += 2*D; if (trSign(key, t) === s0){ reenter = t; break; } } }
+    if (exit){
+      for (i = 0, t = exit; i < 120; i++){
+        if (trSign(key, t+2*D) === s0){ reenter = boundary(t, t+2*D, trSign(key, t)); break; }
+        t += 2*D;
+      }
+    }
     return { enter: enter, exit: exit, reenter: reenter };
   }
   var ASP_LIST = [[0,'соединение',2],[60,'секстиль (поддержка)',2],[90,'квадрат (напряжение)',2],[120,'трин (поддержка)',2],[180,'оппозиция',2]];
@@ -1426,7 +1447,7 @@
     var horizon = Math.min((cur.ad ? cur.ad.end : now + 400*D), now + 400*D);
     var d0 = new Date(now), d1 = new Date(horizon);
     var params = { by: dc.birth.by, bm: dc.birth.bm, bd: dc.birth.bd, bhh: dc.birth.bhh, bmm: dc.birth.bmm, btz: dc.birth.btz,
-      blat: dc.lat, blon: dc.lon, lat: dc.lat, lon: dc.lon, tz: tzCal,
+      blat: chart.lat, blon: chart.lon, lat: dc.lat, lon: dc.lon, tz: tzCal,
       fromY: d0.getUTCFullYear(), fromM: d0.getUTCMonth()+1, fromD: d0.getUTCDate(),
       toY: d1.getUTCFullYear(), toM: d1.getUTCMonth()+1, toD: d1.getUTCDate() };
     var data = null;
