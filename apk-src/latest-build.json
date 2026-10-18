@@ -1,0 +1,15 @@
+{
+  "version_name": "2.114",
+  "version_code": 2000000000,
+  "next_version_code": 2000000001,
+  "package": "ru.jyotish.app2",
+  "source_commit": "1ce6dc44cc78a69c0f8da92ef89ed8a4d8860ce8",
+  "sha256": "1b887272ee105599a3b86a69ab33e87b4a7bca302a5a10ddf78f30c183288690",
+  "size_bytes": 1981869,
+  "signing_certificate_sha256": "82cf7a8d4e42441cb9250a59259238d444397590aabbec1333b5f3dbbf9b127f",
+  "signature_valid": true,
+  "zip_alignment_valid": true,
+  "keystore_and_password_not_packaged": true,
+  "installation_status": "not confirmed",
+  "artifact_filename": "Джйотиш_2_2.114.apk"
+}
